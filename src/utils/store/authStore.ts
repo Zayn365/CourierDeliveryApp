@@ -88,7 +88,7 @@ const useAuthStore = create<StoreState>((set, get) => ({
     const phoneString = phone.toString();
     console.log(phoneString, password, 'Check me ');
     try {
-      const response = await axios
+      const response: any = await axios
         .post(`${apiLink}/login`, {
           mobile: phoneString,
           password: password,
@@ -104,7 +104,7 @@ const useAuthStore = create<StoreState>((set, get) => ({
           Alert.alert(err.response.data.message);
           return;
         });
-      const {user, token} = response.data.data;
+      const {user, token} = response.data;
       console.log(user, token, 'LOOK');
       set({user, token});
       // Alert.alert('User Login Successfully');
@@ -163,7 +163,7 @@ const useAuthStore = create<StoreState>((set, get) => ({
     set({isLoading: true, error: null});
 
     try {
-      const response = await axios
+      const response: any = await axios
         .post(`${apiLink}/signup`, {
           name,
           email,
@@ -225,7 +225,7 @@ const useAuthStore = create<StoreState>((set, get) => ({
 
     set({isLoading: true});
     try {
-      const response = await axios.get(apiLink, {
+      const response: any = await axios.get(apiLink, {
         headers: {Authorization: `Bearer ${token}`},
       });
       set({user: response.data});

@@ -11,22 +11,12 @@ import {MMKV} from 'react-native-mmkv';
 
 export default function App() {
   const [splashOn, setSplashOn] = React.useState<Boolean>(false);
-  const {user, setUser, setToken} = useAuthStore();
+  const {user, initializeUser} = useAuthStore();
   React.useEffect(() => {
     setTimeout(() => {
       setSplashOn(true);
     }, 3000);
-    async function getDatas() {
-      const user = await AsyncStorage.getItem('user');
-      const token = await AsyncStorage.getItem('token');
-      const JsonUser = JSON.parse(user as string);
-      if (user && token) {
-        setUser(JsonUser);
-        setToken(token);
-      }
-      console.log(user, token, 'YO');
-    }
-    getDatas();
+    initializeUser();
   }, []);
 
   return (
