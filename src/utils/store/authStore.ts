@@ -85,41 +85,31 @@ const useAuthStore = create<StoreState>((set, get) => ({
 
   login: async (phone, password) => {
     set({isLoading: true, error: null});
-    const phoneString = phone.toString();
-    console.log(phoneString, password, 'Check me ');
     try {
-      const response: any = await axios
-        .post(`${apiLink}/login`, {
-          mobile: phoneString,
-          password: password,
-        })
-        .then(response => {
-          return response.data;
+      const phoneString = phone.toString();
+      console.log(`Phone: ${phoneString}, Password: ${password}`);
+      const response: any = await axios.post(`${apiLink}/login`, {
+        mobile: phoneString,
+        password: password,
+      });
 
-          // console.log(response, 'I ran');
-          // Alert.alert('OTP verified successfully');
-        })
-        .catch(err => {
-          console.log(err.response.data, 'I ERROR ran');
-          Alert.alert(err.response.data.message);
-          return;
-        });
-      const {user, token} = response.data;
-      console.log(user, token, 'LOOK');
-      set({user, token});
-      // Alert.alert('User Login Successfully');
-
-      await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
+      if (response && response.data) {
+        const {user, token} = response.data?.data;
+        console.log(`User: ${JSON.stringify(user)}, Token: ${token}`);
+        set({user, token});
+        await AsyncStorage.setItem('token', token);
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+      } else {
+        throw new Error('Invalid response from server.');
+      }
     } catch (error: any) {
-      set({error: error.message, isLoading: false});
-      console.log(error.response.data.data[0]);
-      const Error = error.response.data.data
-        ? error.response.data.data[0]
-          ? error.response.data.data[0]?.msg
-          : error.response.data.data.error
-        : 'Something went wrong';
-      Alert.alert('Error', Error);
+      console.error('Error occurred during login:', error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.data?.[0]?.msg ||
+        'An unexpected error occurred. Please try again.';
+      set({error: errorMessage, isLoading: false});
+      Alert.alert('Error', errorMessage);
       return false;
     } finally {
       set({isLoading: false});

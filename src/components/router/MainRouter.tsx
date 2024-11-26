@@ -2,6 +2,7 @@ import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import Home from '../../screens/home/HomeScreen';
+import OrderList from '../../screens/orderList/OrderList';
 
 const Stack = createNativeStackNavigator();
 // import BackIcon from '../../assets/images/icons/Back.svg';
@@ -41,6 +42,11 @@ const Router = ({}) => {
           name="Home"
           options={{title: 'Sign In'}}
           component={Home}
+        />
+        <Stack.Screen
+          name="OrderList"
+          options={{title: 'Order List'}}
+          component={OrderList}
         />
       </Stack.Navigator>
     </>

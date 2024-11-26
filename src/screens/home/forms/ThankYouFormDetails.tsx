@@ -1,28 +1,74 @@
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {ScrollView} from 'react-native-gesture-handler';
 import {homeStyles} from '../../../assets/css/home';
 import Icons from '../../../utils/imagePaths/imagePaths';
 import CustomText from '../../../components/Ui/CustomText';
 import MileStoneTracking from '../../../components/Ui/MileStoneTracking';
 import CustomButton from '../../../components/Ui/CustomButton';
+import useMapStore from '../../../utils/store/mapStore';
+import usePlaceOrder from '../../../utils/store/placeOrderStore';
 
 type Props = {
-  setIsShow: React.Dispatch<React.SetStateAction<boolean>>;
-  isShow: boolean;
   setCurrentStep: React.Dispatch<React.SetStateAction<number>>;
 };
 
-const cancelTime = '05:27'; // Countdown for cancel button
-const orderNumber = 'TCSN7673';
+const cancelTime = '05:27';
 const etaPickup = '09:46 PM';
 const etaDate = '12 Dec 2024';
 
-const ThankYouFormDetails: React.FC<Props> = ({
-  setIsShow,
-  isShow,
-  setCurrentStep,
-}) => {
+const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep}) => {
+  const [isShow, setIsShow] = useState<Boolean>(false);
+  const data: any = useMapStore();
+  const priceData: any = usePlaceOrder();
+  const {price, placeOrderData} = priceData;
+  const {currentAddress, destinationAddress} = data;
+  const [timeRemaining, setTimeRemaining] = useState(5 * 60); // 5 minutes in seconds
+
+  useEffect(() => {
+    if (timeRemaining > 0) {
+      const interval = setInterval(() => {
+        setTimeRemaining(prev => prev - 1);
+      }, 1000);
+
+      return () => clearInterval(interval); // Cleanup the interval on component unmount
+    }
+  }, [timeRemaining]);
+
+  // Format time as MM:SS
+  const formatTime = (time: any) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds
+      .toString()
+      .padStart(2, '0')}`;
+  };
+
+  const parcelType = () => {
+    if (placeOrderData?.parcelType == 1) {
+      const weight = placeOrderData?.weight;
+      return `Parcel, ${weight} KG/s`;
+    } else {
+      return 'Document';
+    }
+  };
+
+  const paymntType = () => {
+    if (placeOrderData?.paymentType == 1) {
+      return `Cash`;
+    } else if (placeOrderData?.paymentType == 2) {
+      return 'Card';
+    } else {
+      return 'Wallet';
+    }
+  };
+
+  const OrderIdSpliter = () => {
+    const orderId = placeOrderData?.orderId;
+    const splitId = orderId?.split('-')[0];
+    return `TCSN${splitId}`;
+  };
+
   return (
     <View style={homeStyles.ViewScrollable}>
       <ScrollView
@@ -49,7 +95,7 @@ const ThankYouFormDetails: React.FC<Props> = ({
               }}>
               <CustomText style={homeStyles.orderLabel}>Order#</CustomText>
               <CustomText style={homeStyles.orderNumber}>
-                {orderNumber}
+                {OrderIdSpliter()}
               </CustomText>
             </View>
             <View
@@ -78,7 +124,7 @@ const ThankYouFormDetails: React.FC<Props> = ({
             <View style={homeStyles.assistanceActions}>
               <TouchableOpacity>
                 <Icons.Message />
-                {/* <CustomText style={homeStyles.callButton}>Call</CustomText> */}
+                {/* <CustomText style={hometyles.callButton}>Call</CustomText> */}
               </TouchableOpacity>
             </View>
           </View>
@@ -113,7 +159,7 @@ const ThankYouFormDetails: React.FC<Props> = ({
                         Parcel Type
                       </CustomText>
                       <CustomText style={homeStyles.mySubText}>
-                        Document, 0.5 KGs
+                        {parcelType()}
                       </CustomText>
                     </View>
                   </View>
@@ -125,7 +171,9 @@ const ThankYouFormDetails: React.FC<Props> = ({
                         Pickup
                       </CustomText>
                       <CustomText style={homeStyles.mySubText}>
-                        L7, Work Hall Motif, Block-21, F.B Area, Karachi
+                        {currentAddress
+                          ? currentAddress
+                          : 'L7, Work Hall Motif, Block-21, F.B Area, Karachi'}
                       </CustomText>
                     </View>
                   </View>
@@ -138,8 +186,9 @@ const ThankYouFormDetails: React.FC<Props> = ({
                         Delivery
                       </CustomText>
                       <CustomText style={homeStyles.mySubText}>
-                        C-90, Khayaban-e-sehar, Phase VI, DHA, Near Sultan
-                        Masjid, Karachi.
+                        {destinationAddress
+                          ? destinationAddress
+                          : 'C-90, Khayaban-e-sehar, Phase VI, DHA, Near Sultan Masjid, Karachi.'}
                       </CustomText>
                     </View>
                   </View>
@@ -150,7 +199,7 @@ const ThankYouFormDetails: React.FC<Props> = ({
                         Sub-total:{' '}
                       </CustomText>
                       <CustomText style={homeStyles.lightFont}>
-                        Rs. 500
+                        Rs. {price.ordrPrice}
                       </CustomText>
                     </View>
                     <View style={homeStyles.priceAreaListThankYouPage}>
@@ -158,7 +207,7 @@ const ThankYouFormDetails: React.FC<Props> = ({
                         Parcel Insurance:{' '}
                       </CustomText>
                       <CustomText style={homeStyles.lightFont}>
-                        Rs. 50
+                        Rs. {price.insurancePricing}
                       </CustomText>
                     </View>
                     <View style={homeStyles.priceAreaListThankYouPage}>
@@ -166,7 +215,7 @@ const ThankYouFormDetails: React.FC<Props> = ({
                         Total (incl fees and tax){' '}
                       </CustomText>
                       <CustomText style={homeStyles.BoldFontLarge}>
-                        Rs. 550
+                        Rs. {price.totalPrice}
                       </CustomText>
                     </View>
                     <View style={homeStyles.priceAreaListThankYouPage}>
@@ -174,7 +223,7 @@ const ThankYouFormDetails: React.FC<Props> = ({
                         Payment Method
                       </CustomText>
                       <CustomText style={homeStyles.lightFont}>
-                        Card ending 8277
+                        {paymntType()}
                       </CustomText>
                     </View>
                   </View>
@@ -190,7 +239,7 @@ const ThankYouFormDetails: React.FC<Props> = ({
             <TouchableOpacity style={homeStyles.cancelContainer}>
               <CustomText style={homeStyles.cancelButton}>Cancel</CustomText>
               <CustomText style={homeStyles.cancelTimer}>
-                {cancelTime}
+                {timeRemaining > 0 ? formatTime(timeRemaining) : '00:00'}
               </CustomText>
             </TouchableOpacity>
             {/* Home Button */}

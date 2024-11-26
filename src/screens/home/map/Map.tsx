@@ -1,76 +1,41 @@
-import React, {useEffect, useState, useRef} from 'react';
-import {StyleSheet, View} from 'react-native';
+import React, {useEffect, useRef} from 'react';
+import {StyleSheet} from 'react-native';
 import MapView, {Marker} from 'react-native-maps';
-import Icons from '../../../utils/imagePaths/imagePaths';
-import MapViewDirections from 'react-native-maps-directions';
-import GetLocation from 'react-native-get-location';
+import MapViewDirections, {
+  MapViewDirectionsWaypoints,
+} from 'react-native-maps-directions';
 import {ApiKey} from '../../../utils/Google_KEY';
 import {mapStyle} from '../../../assets/css/mapStyle';
+import useMapStore from '../../../utils/store/mapStore';
 
 type Prop = {
   currentStep: number;
 };
 const Map: React.FC<Prop> = ({currentStep}) => {
-  const [currentLocation, setCurrentLocation] = useState({
-    latitude: 24.8878,
-    longitude: 67.188,
-  });
-  const [destination, setDestination] = useState({
-    latitude: 24.9571,
-    longitude: 67.0678,
-  });
+  const data: any = useMapStore();
+  const {
+    fetchAddress,
+    destination,
+    setDestination,
+    setDistance,
+    setDuration,
+    currentLocation,
+    setCurrentLocation,
+  } = data;
+
+  const riderPoint: MapViewDirectionsWaypoints = {
+    latitude: 24.9008,
+    longitude: 67.1681,
+  };
+
   const mapRef = useRef(null);
 
-  // Fetch current location
-  const getCurrentLocation = async () => {
-    try {
-      const location = await GetLocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 60000,
-      });
-      setCurrentLocation({
-        latitude: location.latitude,
-        longitude: location.longitude,
-      });
-      fetchAddress(location.latitude, location.longitude, 'Current Location');
-    } catch (error) {
-      console.error('Error fetching location:', error);
-    }
-  };
-
-  // Fetch address from coordinates
-  const fetchAddress = async (
-    latitude: any,
-    longitude: any,
-    label = 'Location',
-  ) => {
-    try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${ApiKey}`,
-      );
-      const data = await response.json();
-      if (data.results && data.results[0]) {
-        console.log(`${label} Address:`, data.results[0].formatted_address);
-      } else {
-        console.error('No address found for coordinates');
-      }
-    } catch (error) {
-      console.error('Error fetching address:', error);
-    }
-  };
-
-  useEffect(() => {
-    getCurrentLocation();
-  }, []);
-
-  // Handle marker drag
-  const onMarkerDragEnd = (e: any, setLocation: any, label: string) => {
+  const onMarkerDragEnd = (e: any, setLocation: any, destination: boolean) => {
     const {latitude, longitude} = e.nativeEvent.coordinate;
     setLocation({latitude, longitude});
-    fetchAddress(latitude, longitude, label);
+    fetchAddress(latitude, longitude, destination);
   };
 
-  // Adjust map position and zoom
   const adjustMapToCoordinates = (coordinates: any) => {
     if (mapRef?.current) {
       // @ts-ignore
@@ -85,66 +50,89 @@ const Map: React.FC<Prop> = ({currentStep}) => {
       });
     }
   };
-
+  useEffect(() => {
+    if (currentLocation && mapRef.current) {
+      // @ts-ignore
+      mapRef.current.animateCamera(
+        {
+          center: currentLocation,
+          zoom: 15,
+        },
+        {duration: 1000},
+      );
+    }
+  }, [currentLocation]);
   return (
     <MapView
       ref={mapRef}
+      // ref={ref => (mapRef = ref)}
       style={StyleSheet.absoluteFillObject}
       showsUserLocation={true}
       customMapStyle={mapStyle}
-      initialRegion={{
-        latitude: currentLocation.latitude,
-        longitude: currentLocation.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }}>
+      // initialRegion={{
+      //   latitude: currentLocation ? currentLocation?.latitude : 24.8607,
+      //   longitude: currentLocation ? currentLocation?.longitude : 67.0011,
+      //   latitudeDelta: 0.01,
+      //   longitudeDelta: 0.01,
+      // }}
+    >
+      {currentStep >= 6 ? <Marker coordinate={riderPoint}></Marker> : ''}
       {/* Current Location Marker */}
-      <Marker
-        coordinate={currentLocation}
-        draggable
-        onDragEnd={e =>
-          onMarkerDragEnd(e, setCurrentLocation, 'Current Location')
-        }>
-        {/* <Icons.Pin /> */}
-      </Marker>
-
-      {/* Destination Marker */}
-      {currentStep >= 6 && (
+      {currentLocation?.latitude && currentLocation?.longitude && (
         <>
-          {/* <Marker
-            coordinate={destination}
+          <Marker
+            coordinate={currentLocation}
             draggable
-            onDragEnd={e => onMarkerDragEnd(e, setDestination, 'Destination')}> */}
-          {/* <Icons.Point /> */}
-          {/* </Marker> */}
-
-          {/* MapViewDirections */}
-          {/* <MapViewDirections
-            origin={currentLocation}
-            destination={destination}
-            apikey={ApiKey}
-            strokeColor="#4CD964" // Updated color to hot pink
-            strokeWidth={4} // Thicker line for better visibility
-            optimizeWaypoints={true}
-            mode="DRIVING"
-            onReady={result => {
-              console.log('Route calculated:', result);
-              console.log(`Distance: ${result.distance} km`);
-              console.log(`Duration: ${result.duration} mins`);
-
-              // Adjust map to fit the route
-              adjustMapToCoordinates(result.coordinates);
-            }}
-            onError={errorMessage => {
-              console.error('Error with MapViewDirections:', errorMessage);
-            }}
-          /> */}
+            onDragEnd={e => {
+              console.log('Drag end:', e.nativeEvent.coordinate);
+              onMarkerDragEnd(e, setCurrentLocation, false);
+            }}></Marker>
         </>
       )}
+
+      {destination.latitude &&
+        destination.longitude &&
+        currentLocation?.latitude &&
+        currentLocation?.longitude && (
+          <>
+            {/* Destination Marker */}
+            <Marker
+              coordinate={destination}
+              draggable
+              onDragEnd={e => {
+                console.log('Drag end:', e.nativeEvent.coordinate);
+                onMarkerDragEnd(e, setDestination, true);
+              }}></Marker>
+            {/* MapViewDirections */}
+            {/* {currentStep >= 1 && (
+              <> */}
+            <MapViewDirections
+              origin={riderPoint}
+              destination={destination}
+              waypoints={[currentLocation]}
+              apikey={ApiKey}
+              strokeColor={currentStep >= 6 ? '#4CD964' : '#4CD96400'}
+              strokeWidth={4}
+              optimizeWaypoints={true}
+              mode="DRIVING"
+              onReady={result => {
+                console.log(`Distance: ${result.distance} km`);
+                console.log(`Duration: ${result.duration} mins`);
+                setDistance(result.distance);
+                setDuration(result.duration);
+
+                adjustMapToCoordinates(result.coordinates);
+              }}
+              onError={errorMessage => {
+                console.error('Error with MapViewDirections:', errorMessage);
+              }}
+            />
+          </>
+        )}
+      {/* </>
+        )} */}
     </MapView>
   );
 };
 
 export default Map;
-
-const styles = StyleSheet.create({});

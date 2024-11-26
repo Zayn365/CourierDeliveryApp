@@ -1,4 +1,11 @@
-import {StyleSheet, Text, View, FlatList, TouchableOpacity} from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import {homeStyles} from '../../../assets/css/home';
 import CustomText from '../../../components/Ui/CustomText';
@@ -9,15 +16,24 @@ import useMapStore from '../../../utils/store/mapStore';
 
 type Props = {
   nextStep: () => void;
+  setData: React.Dispatch<React.SetStateAction<any>>;
 };
 
-const PickUpAdressForm: React.FC<Props> = ({nextStep}) => {
+const PickUpAdressForm: React.FC<Props> = ({nextStep, setData}) => {
   const [address, setAdress] = useState('');
   const [locations, setLocations] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [id, setId] = useState('');
   const data: any = useMapStore();
-  const {fetchPlaces, fetchLonLat} = data;
+  const {
+    fetchPlaces,
+    fetchLonLat,
+    currentAddress,
+    setCurrentAddress,
+    currentLocation,
+    destination,
+    distance,
+  } = data;
+
   useEffect(() => {
     if (address) {
       locationGetter();
@@ -35,12 +51,30 @@ const PickUpAdressForm: React.FC<Props> = ({nextStep}) => {
     }
   };
 
-  console.log(id);
   const handleSelectLocation = (location: string, id: string) => {
     setAdress(location); // Set selected location to input
+    setCurrentAddress(location);
     setShowDropdown(false); // Hide dropdown after selection
-    setId(id);
   };
+
+  function SendLocations() {
+    const pickuparea = currentAddress.split(',')[1];
+    if (currentLocation && destination) {
+      setData((prevData: any) => {
+        return {
+          ...prevData,
+          estDistance: distance,
+          pickUpAddress: currentAddress,
+          pickUpArea: pickuparea ? pickuparea : '',
+          pickUpLong: currentLocation?.longitude,
+          pickUpLat: currentLocation?.latitude,
+        };
+      });
+      nextStep();
+    } else {
+      Alert.alert('Something is missing! Select both Addresses');
+    }
+  }
 
   return (
     <>
@@ -49,7 +83,9 @@ const PickUpAdressForm: React.FC<Props> = ({nextStep}) => {
         <View style={homeStyles.addressContainer}>
           <Icons.MapIcon />
           <CustomText style={homeStyles.addressText}>
-            L7, Zafa Street, Block 21, F.B. Area, Karachi.
+            {currentAddress
+              ? currentAddress
+              : 'L7, Zafa Street, Block 21, F.B. Area, Karachi.'}
           </CustomText>
         </View>
         <CustomInput
@@ -69,7 +105,7 @@ const PickUpAdressForm: React.FC<Props> = ({nextStep}) => {
                   style={styles.dropdownItem}
                   onPress={() => {
                     handleSelectLocation(item.description, item.place_id);
-                    fetchLonLat(item.place_id);
+                    fetchLonLat(item.place_id, false);
                   }} // Adjust based on location property
                 >
                   <Text style={styles.dropdownText}>{item.description}</Text>
@@ -78,7 +114,7 @@ const PickUpAdressForm: React.FC<Props> = ({nextStep}) => {
             />
           </View>
         )}
-        <CustomButton onPress={nextStep} text="Request a Pick Up" />
+        <CustomButton onPress={SendLocations} text="Request a Pick Up" />
       </View>
     </>
   );

@@ -3,6 +3,8 @@ import React from 'react';
 import Animated from 'react-native-reanimated';
 import {homeStyles} from '../../../assets/css/home';
 import Icons from '../../../utils/imagePaths/imagePaths';
+import GetLocation from 'react-native-get-location';
+import useMapStore from '../../../utils/store/mapStore';
 
 type Prop = {
   snapPoints: Array<any>;
@@ -10,6 +12,25 @@ type Prop = {
 };
 
 const LocationButton: React.FC<Prop> = ({snapPoints, bottomSheetPosition}) => {
+  const data: any = useMapStore();
+
+  const {fetchAddress, setCurrentLocation} = data;
+  const getCurrentLocation = async () => {
+    try {
+      const location = await GetLocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 60000,
+      });
+      setCurrentLocation({
+        latitude: location.latitude,
+        longitude: location.longitude,
+      });
+      fetchAddress(location.latitude, location.longitude, false);
+    } catch (error) {
+      console.error('Error fetching location:', error);
+    }
+  };
+
   return (
     <>
       <Animated.View
@@ -19,7 +40,7 @@ const LocationButton: React.FC<Prop> = ({snapPoints, bottomSheetPosition}) => {
           {bottom: `${snapPoints[bottomSheetPosition]}%`},
         ]}>
         {/* <TouchableOpacity> */}
-        <Icons.LocationIcon />
+        <Icons.LocationIcon onPress={getCurrentLocation} />
         {/* </TouchableOpacity> */}
       </Animated.View>
     </>

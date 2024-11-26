@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useRef, useState} from 'react';
-import {View} from 'react-native';
+import {TouchableOpacity, View} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import BottomSheet, {BottomSheetView} from '@gorhom/bottom-sheet';
 import {homeStyles} from '../../assets/css/home';
@@ -7,12 +7,16 @@ import FormRenderer from './formRenderer/FormRenderer';
 import GoBackButton from './components/GoBackButton';
 import LocationButton from './components/LocationButton';
 import Map from './map/Map';
+import Header from '../../components/Ui/Header';
+import ProgressBar from './components/InProgressBar';
+import {useNavigation} from '@react-navigation/native';
 
 const App: React.FC = () => {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const [bottomSheetPosition, setBottomSheetPosition] = useState(0);
   const [currentStep, setCurrentStep] = useState(1);
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const navigation: any = useNavigation();
 
   // Function to go to the next step
   const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 8));
@@ -37,60 +41,66 @@ const App: React.FC = () => {
     }
   }, []);
   return (
-    <View style={{flex: 1}}>
-      {/* Map View */}
-      <GestureHandlerRootView style={homeStyles.overlay}>
-        <Map currentStep={currentStep} />
-        {/* GoBack Button */}
-        <GoBackButton
-          snapPoints={snapPoints}
-          bottomSheetPosition={bottomSheetPosition}
-          currentStep={currentStep}
-          prevStep={prevStep}
-        />
-        {/* Location Button */}
-        <LocationButton
-          snapPoints={snapPoints}
-          bottomSheetPosition={bottomSheetPosition}
-        />
-        {/* Bottom Sheet */}
-        <BottomSheet
-          ref={bottomSheetRef}
-          snapPoints={snapPoints}
-          index={currentIndex}
-          enableDynamicSizing={true}
-          onChange={handleSheetChanges}
-          enablePanDownToClose={false}
-          enableOverDrag={false}
-          style={{
-            backgroundColor: '#27272700',
-            shadowColor: '#000',
-            shadowOffset: {
-              width: 0,
-              height: 12,
-            },
-            shadowOpacity: 0.58,
-            shadowRadius: 16.0,
+    <>
+      <View style={{flex: 1}}>
+        {/* Map View */}
+        <GestureHandlerRootView style={homeStyles.overlay}>
+          <Map currentStep={currentStep} />
+          <Header currentStep={currentStep} />
+          <TouchableOpacity onPress={() => navigation.navigate('OrderList')}>
+            <ProgressBar />
+          </TouchableOpacity>
+          {/* GoBack Button */}
+          <GoBackButton
+            snapPoints={snapPoints}
+            bottomSheetPosition={bottomSheetPosition}
+            currentStep={currentStep}
+            prevStep={prevStep}
+          />
+          {/* Location Button */}
+          <LocationButton
+            snapPoints={snapPoints}
+            bottomSheetPosition={bottomSheetPosition}
+          />
+          {/* Bottom Sheet */}
+          <BottomSheet
+            ref={bottomSheetRef}
+            snapPoints={snapPoints}
+            index={currentIndex}
+            enableDynamicSizing={true}
+            onChange={handleSheetChanges}
+            enablePanDownToClose={false}
+            enableOverDrag={false}
+            style={{
+              backgroundColor: '#27272700',
+              shadowColor: '#000',
+              shadowOffset: {
+                width: 0,
+                height: 12,
+              },
+              shadowOpacity: 0.58,
+              shadowRadius: 16.0,
 
-            elevation: 24,
-          }}
-          handleIndicatorStyle={{
-            backgroundColor: '#0000001a',
-            width: 54,
-            marginTop: 5,
-          }}>
-          <BottomSheetView
-            style={homeStyles.contentContainer}
-            pointerEvents={isSheetExpanded ? 'auto' : 'none'}>
-            <FormRenderer
-              setCurrentStep={setCurrentStep}
-              nextStep={nextStep}
-              currentStep={currentStep}
-            />
-          </BottomSheetView>
-        </BottomSheet>
-      </GestureHandlerRootView>
-    </View>
+              elevation: 24,
+            }}
+            handleIndicatorStyle={{
+              backgroundColor: '#0000001a',
+              width: 54,
+              marginTop: 5,
+            }}>
+            <BottomSheetView
+              style={homeStyles.contentContainer}
+              pointerEvents={isSheetExpanded ? 'auto' : 'none'}>
+              <FormRenderer
+                setCurrentStep={setCurrentStep}
+                nextStep={nextStep}
+                currentStep={currentStep}
+              />
+            </BottomSheetView>
+          </BottomSheet>
+        </GestureHandlerRootView>
+      </View>
+    </>
   );
 };
 

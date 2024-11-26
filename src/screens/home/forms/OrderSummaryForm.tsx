@@ -1,4 +1,4 @@
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import React, {Dispatch, SetStateAction} from 'react';
 import {homeStyles} from '../../../assets/css/home';
 import {ScrollView} from 'react-native-gesture-handler';
@@ -6,13 +6,44 @@ import CustomText from '../../../components/Ui/CustomText';
 import Icons from '../../../utils/imagePaths/imagePaths';
 import CustomInput from '../../../components/Ui/CustomInput';
 import CustomButton from '../../../components/Ui/CustomButton';
+import useMapStore from '../../../utils/store/mapStore';
+import usePlaceOrder from '../../../utils/store/placeOrderStore';
 
 type Props = {
   nextStep: () => void;
   setCurrentStep: React.Dispatch<React.SetStateAction<number>>;
   COD: boolean;
+  setData: React.Dispatch<React.SetStateAction<any>>;
+  packageData: any;
+  token: string;
 };
-const OrderSummaryForm: React.FC<Props> = ({setCurrentStep, nextStep, COD}) => {
+const OrderSummaryForm: React.FC<Props> = ({
+  setCurrentStep,
+  nextStep,
+  COD,
+  setData,
+  packageData,
+  token,
+}) => {
+  const placeOrder: any = usePlaceOrder();
+  const {placeOrderApi, isLoading, price} = placeOrder;
+  console.log(price);
+  const data: any = useMapStore();
+  const {currentAddress, destinationAddress} = data;
+  async function SetPayMethod() {
+    if (destinationAddress && currentAddress) {
+      setData((prevData: any) => {
+        return {
+          ...prevData,
+          paymentType: COD ? 1 : 2,
+        };
+      });
+      await placeOrderApi(packageData, token);
+      nextStep();
+    } else {
+      Alert.alert('Something is missing!');
+    }
+  }
   return (
     <>
       <View style={homeStyles.ViewScrollable}>
@@ -35,7 +66,9 @@ const OrderSummaryForm: React.FC<Props> = ({setCurrentStep, nextStep, COD}) => {
                   Pickup
                 </CustomText>
                 <CustomText style={homeStyles.mySubText}>
-                  L7, Work Hall Motif, Block-21, F.B Area, Karachi
+                  {currentAddress
+                    ? currentAddress
+                    : 'L7, Work Hall Motif, Block-21, F.B Area, Karachi'}
                 </CustomText>
               </View>
             </View>
@@ -48,8 +81,9 @@ const OrderSummaryForm: React.FC<Props> = ({setCurrentStep, nextStep, COD}) => {
                   Delivery
                 </CustomText>
                 <CustomText style={homeStyles.mySubText}>
-                  C-90, Khayaban-e-sehar, Phase VI, DHA, Near Sultan Masjid,
-                  Karachi.
+                  {destinationAddress
+                    ? destinationAddress
+                    : 'C-90, Khayaban-e-sehar, Phase VI, DHA, Near Sultan Masjid, Karachi.'}
                 </CustomText>
               </View>
             </View>
@@ -60,20 +94,24 @@ const OrderSummaryForm: React.FC<Props> = ({setCurrentStep, nextStep, COD}) => {
                 <CustomText style={homeStyles.lightFont}>
                   Sub-total:{' '}
                 </CustomText>
-                <CustomText style={homeStyles.lightFont}>Rs. 500</CustomText>
+                <CustomText style={homeStyles.lightFont}>
+                  Rs. {price.orderPrice}
+                </CustomText>
               </View>
               <View style={homeStyles.priceAreaList}>
                 <CustomText style={homeStyles.lightFont}>
                   Parcel Insurance:{' '}
                 </CustomText>
-                <CustomText style={homeStyles.lightFont}>Rs. 50</CustomText>
+                <CustomText style={homeStyles.lightFont}>
+                  Rs. {price.insurancePricing}
+                </CustomText>
               </View>
               <View style={homeStyles.priceAreaList}>
                 <CustomText style={homeStyles.lightFont}>
                   Total (incl fees and tax){' '}
                 </CustomText>
                 <CustomText style={homeStyles.BoldFontLarge}>
-                  Rs. 550
+                  Rs. {price.totalPrice}
                 </CustomText>
               </View>
             </View>
@@ -131,7 +169,12 @@ const OrderSummaryForm: React.FC<Props> = ({setCurrentStep, nextStep, COD}) => {
             )}
 
             {/* Pay Now Button */}
-            <CustomButton onPress={nextStep} text="Pay Now" />
+            <CustomButton
+              disabled={isLoading}
+              loader={isLoading}
+              onPress={SetPayMethod}
+              text="Pay Now"
+            />
           </View>
         </ScrollView>
       </View>

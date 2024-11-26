@@ -419,7 +419,7 @@ export const homeStyles = StyleSheet.create({
   },
   assistanceActions: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'flex-end',
     width: '40%',
   },
   chatButton: {

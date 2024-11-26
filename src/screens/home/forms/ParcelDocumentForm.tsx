@@ -1,5 +1,5 @@
-import {TouchableOpacity, View} from 'react-native';
-import React, {Dispatch, SetStateAction} from 'react';
+import {Alert, TouchableOpacity, View} from 'react-native';
+import React, {Dispatch, SetStateAction, useState} from 'react';
 import {ScrollView, Switch} from 'react-native-gesture-handler';
 import {homeStyles} from '../../../assets/css/home';
 import CustomText from '../../../components/Ui/CustomText';
@@ -17,6 +17,9 @@ type Props = {
   setIsCheck: Dispatch<SetStateAction<boolean>>;
   isEnabled: boolean;
   toggleSwitch: () => void;
+  setData: React.Dispatch<React.SetStateAction<any>>;
+  ParcelWorth: number;
+  setParcelWorth: React.Dispatch<React.SetStateAction<number>>;
 };
 const ParcelDocumentForm: React.FC<Props> = ({
   selected,
@@ -26,7 +29,51 @@ const ParcelDocumentForm: React.FC<Props> = ({
   isEnabled,
   toggleSwitch,
   nextStep,
+  setData,
+  ParcelWorth,
+  setParcelWorth,
 }) => {
+  const [isWeight, setIsWeight] = useState(0);
+  function setPackageDetails() {
+    {
+      const isFlyerRequired = selected !== 'Parcel' ? true : false;
+      const isInsured = isEnabled;
+
+      if (!isFlyerRequired) {
+        if (isEnabled && !ParcelWorth) {
+          Alert.alert('Please Input Parcel Worth');
+          return;
+        }
+        if (!isWeight) {
+          Alert.alert('Please Input Approx Weight');
+          return;
+        } else {
+          setData((prev: any) => {
+            return {
+              ...prev,
+              flyerRequired: isFlyerRequired,
+              weight: isWeight,
+              isInsured: isInsured,
+              parcelType: isFlyerRequired ? 2 : 1,
+            };
+          });
+          nextStep();
+        }
+      } else {
+        setData((prev: any) => {
+          return {
+            ...prev,
+            flyerRequired: isFlyerRequired,
+            weight: isWeight,
+            isInsured: isInsured,
+            parcelType: isFlyerRequired ? 2 : 1,
+          };
+        });
+        nextStep();
+      }
+    }
+  }
+
   return (
     <>
       <View style={homeStyles.ViewScrollable}>
@@ -57,20 +104,36 @@ const ParcelDocumentForm: React.FC<Props> = ({
                 {/* <Tick /> */}
                 <CustomText style={homeStyles.addressText}>
                   Bring TCS{' '}
-                  {selected === 'Parcel' ? 'Express Flyer' : 'Red Box'}
+                  {selected !== 'Parcel' ? 'Express Flyer' : 'Red Box'}
                 </CustomText>
               </View>
             </TouchableOpacity>
             {selected === 'Parcel' && (
-              <View style={homeStyles.KGSInput}>
-                <CustomInput
-                  placeholder="Enter Approx. Weight (Optional)"
-                  value=""
-                  type="number-pad"
-                  style={{width: '100%'}}
-                />
-                <Icons.KGs style={homeStyles.KGSIcon} />
-              </View>
+              <>
+                <View style={homeStyles.KGSInput}>
+                  <CustomInput
+                    placeholder="Enter Approx. Weight (Optional)"
+                    value={isWeight}
+                    setValue={setIsWeight}
+                    type="number-pad"
+                    style={{width: '100%'}}
+                  />
+                  <Icons.KGs style={homeStyles.KGSIcon} />
+                </View>
+                {isEnabled ? (
+                  <View style={homeStyles.KGSInput}>
+                    <CustomInput
+                      placeholder="Est Parcel Worth"
+                      value={ParcelWorth}
+                      setValue={setParcelWorth}
+                      type="number-pad"
+                      style={{width: '100%'}}
+                    />
+                  </View>
+                ) : (
+                  ''
+                )}
+              </>
             )}
             <View style={homeStyles.insuranceContainer}>
               <View style={homeStyles.insuranceDivider}>
@@ -88,8 +151,8 @@ const ParcelDocumentForm: React.FC<Props> = ({
               />
             </View>
 
-            <CustomImagePicker addname={selected} />
-            <CustomButton text="Next" onPress={nextStep} />
+            <CustomImagePicker addname={selected} setData={setData} />
+            <CustomButton text="Next" onPress={setPackageDetails} />
           </View>
         </ScrollView>
       </View>

@@ -4,9 +4,9 @@ import {customInput} from '../../assets/css/main';
 
 type TextInputType = {
   placeholder: string;
-  value: string;
+  value: string | number;
   readonly?: boolean;
-  setValue?: (value: string) => void;
+  setValue?: React.Dispatch<React.SetStateAction<any>>;
   secureTextEntry?: boolean;
   isFocus?: boolean;
   type?: KeyboardTypeOptions;

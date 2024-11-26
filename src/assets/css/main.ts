@@ -141,6 +141,34 @@ export const customSmallBtn = StyleSheet.create({
   },
 });
 
+export const HeaderStyle = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10, // Ensure it overlays the map
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingTop: 10, // For devices with a notch
+    // backgroundColor: 'transparent', // Transparent background
+  },
+  notificationContainer: {
+    position: 'relative',
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    height: 8,
+    width: 8,
+    borderRadius: 4,
+    backgroundColor: 'red',
+  },
+});
+
 export const ImagePicker = StyleSheet.create({
   container: {
     borderWidth: 2,
@@ -162,14 +190,27 @@ export const ImagePicker = StyleSheet.create({
     color: '#A0A0A0',
   },
   imageContainer: {
-    width: 120,
-    height: 120,
+    width: 80,
+    height: 80,
     borderRadius: 10,
     // borderWidth: 1,
     // borderColor: '#E0E0E0',
     justifyContent: 'center',
     alignItems: 'center',
     marginVertical: 20,
+    flexDirection: 'row',
+    // backgroundColor: '#F7F7F7',
+  },
+  imageContainerArray: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    // borderWidth: 1,
+    // borderColor: '#E0E0E0',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    marginVertical: 20,
+    flexDirection: 'row',
     // backgroundColor: '#F7F7F7',
   },
   placeholderIcon: {
@@ -181,6 +222,7 @@ export const ImagePicker = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 10,
+    flex: 1,
   },
   buttonContainer: {
     flexDirection: 'row',

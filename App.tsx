@@ -6,8 +6,6 @@ import AuthRouter from './src/components/router/AuthRouter';
 import MainRouter from './src/components/router/MainRouter';
 import useAuthStore from './src/utils/store/authStore';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {MMKV} from 'react-native-mmkv';
 
 export default function App() {
   const [splashOn, setSplashOn] = React.useState<Boolean>(false);
@@ -18,7 +16,7 @@ export default function App() {
     }, 3000);
     initializeUser();
   }, []);
-
+  console.log(user, 'check me');
   return (
     <SafeAreaView style={{flex: 1}}>
       {!splashOn ? (
