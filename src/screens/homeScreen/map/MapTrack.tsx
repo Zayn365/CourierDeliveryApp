@@ -11,7 +11,7 @@ import useMapStore from '../../../utils/store/mapStore';
 type Prop = {
   currentStep: number;
 };
-const Map: React.FC<Prop> = ({currentStep}) => {
+const MapTrack: React.FC<Prop> = ({currentStep}) => {
   const data: any = useMapStore();
   const {
     fetchAddress,
@@ -28,18 +28,11 @@ const Map: React.FC<Prop> = ({currentStep}) => {
     longitude: 67.1681,
   };
 
-  const mapRef = useRef(null);
-
-  const onMarkerDragEnd = (e: any, setLocation: any, destination: boolean) => {
-    const {latitude, longitude} = e.nativeEvent.coordinate;
-    setLocation({latitude, longitude});
-    fetchAddress(latitude, longitude, destination);
-  };
+  const mapRef = useRef<MapView | null>(null);
 
   const adjustMapToCoordinates = (coordinates: any) => {
     if (mapRef?.current) {
-      // @ts-ignore
-      mapRef?.current?.fitToCoordinates(coordinates, {
+      mapRef.current.fitToCoordinates(coordinates, {
         edgePadding: {
           top: 160,
           right: 50,
@@ -50,9 +43,9 @@ const Map: React.FC<Prop> = ({currentStep}) => {
       });
     }
   };
+
   useEffect(() => {
     if (currentLocation && mapRef.current) {
-      // @ts-ignore
       mapRef.current.animateCamera(
         {
           center: currentLocation,
@@ -61,33 +54,33 @@ const Map: React.FC<Prop> = ({currentStep}) => {
         {duration: 1000},
       );
     }
-  }, [currentLocation]);
+    adjustMapToCoordinates(currentLocation);
+    adjustMapToCoordinates(destination);
+  }, [currentLocation, destination]);
+
   return (
     <MapView
       ref={mapRef}
-      // ref={ref => (mapRef = ref)}
       style={StyleSheet.absoluteFillObject}
       showsUserLocation={true}
+      loadingEnabled={true}
       customMapStyle={mapStyle}
-      // initialRegion={{
-      //   latitude: currentLocation ? currentLocation?.latitude : 24.8607,
-      //   longitude: currentLocation ? currentLocation?.longitude : 67.0011,
-      //   latitudeDelta: 0.01,
-      //   longitudeDelta: 0.01,
-      // }}
-    >
-      {currentStep >= 6 ? <Marker coordinate={riderPoint}></Marker> : ''}
-      {/* Current Location Marker */}
+      initialRegion={{
+        latitude: currentLocation?.latitude || 24.8607, // Default latitude
+        longitude: currentLocation?.longitude || 67.0011, // Default longitude
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }}>
+      {currentStep >= 6 && <Marker coordinate={riderPoint} />}
+
       {currentLocation?.latitude && currentLocation?.longitude && (
-        <>
-          <Marker
-            coordinate={currentLocation}
-            draggable
-            onDragEnd={e => {
-              console.log('Drag end:', e.nativeEvent.coordinate);
-              onMarkerDragEnd(e, setCurrentLocation, false);
-            }}></Marker>
-        </>
+        <Marker
+          coordinate={currentLocation}
+          // draggable
+          // onDragEnd={e => {
+          //   onMarkerDragEnd(e, setCurrentLocation, false);
+          // }}
+        />
       )}
 
       {destination.latitude &&
@@ -95,17 +88,13 @@ const Map: React.FC<Prop> = ({currentStep}) => {
         currentLocation?.latitude &&
         currentLocation?.longitude && (
           <>
-            {/* Destination Marker */}
             <Marker
               coordinate={destination}
-              draggable
-              onDragEnd={e => {
-                console.log('Drag end:', e.nativeEvent.coordinate);
-                onMarkerDragEnd(e, setDestination, true);
-              }}></Marker>
-            {/* MapViewDirections */}
-            {/* {currentStep >= 1 && (
-              <> */}
+              // draggable
+              // onDragEnd={e => {
+              //   onMarkerDragEnd(e, setDestination, true);
+              // }}
+            />
             <MapViewDirections
               origin={riderPoint}
               destination={destination}
@@ -129,10 +118,8 @@ const Map: React.FC<Prop> = ({currentStep}) => {
             />
           </>
         )}
-      {/* </>
-        )} */}
     </MapView>
   );
 };
 
-export default Map;
+export default MapTrack;

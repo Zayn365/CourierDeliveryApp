@@ -2,10 +2,14 @@ import CustomText from '../../../components/Ui/CustomText';
 import Icons from '../../../utils/imagePaths/imagePaths';
 import React from 'react';
 import {View} from 'react-native';
+import usePlaceOrder from '../../../utils/store/placeOrderStore';
 
 type Props = {};
 
 const ProgressBar: React.FC<Props> = ({}) => {
+  const data = usePlaceOrder();
+  const {orders} = data;
+  // console.log(orders);
   return (
     <View
       style={{justifyContent: 'center', flexDirection: 'row', marginTop: 20}}>
@@ -51,7 +55,7 @@ const ProgressBar: React.FC<Props> = ({}) => {
               marginHorizontal: 30,
               borderRadius: 50,
             }}>
-            2
+            {orders?.length > 0 ? orders?.length : 0}
           </CustomText>
           <Icons.GoForwardIcon />
         </View>

@@ -1,11 +1,11 @@
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import SignIn from '../../screens/auth/signIn/SignIn';
-import SignUp from '../../screens/auth/signUp/SignUp';
-import Verify from '../../screens/auth/verify/Verify';
+import SignIn from '../../screens/authScreens/signIn/SignIn';
+import SignUp from '../../screens/authScreens/signUp/SignUp';
+import Verify from '../../screens/authScreens/verify/Verify';
 const Stack = createNativeStackNavigator();
-import BackIcon from '../../assets/images/icons/Back.svg';
+import Icons from '../../utils/imagePaths/imagePaths';
 import {useNavigation} from '@react-navigation/native';
 
 const Router = ({}) => {
@@ -34,7 +34,7 @@ const Router = ({}) => {
           headerLeft: ({canGoBack}) =>
             canGoBack ? (
               <TouchableOpacity onPress={() => navigation.goBack()}>
-                <BackIcon width={34} height={34} />{' '}
+                <Icons.BackIcon width={34} height={34} />{' '}
               </TouchableOpacity>
             ) : null,
         }}>

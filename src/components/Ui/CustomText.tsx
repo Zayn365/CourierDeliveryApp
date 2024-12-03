@@ -1,35 +1,28 @@
 import React from 'react';
-import {Text, StyleSheet, TextProps, TextStyle} from 'react-native';
+import {Text, TextProps, TextStyle} from 'react-native';
 
 interface CustomTextProps extends TextProps {
   style?: TextStyle;
+  isBold?: boolean;
 }
 
-const CustomText: React.FC<CustomTextProps> = ({style, children, ...props}) => {
-  const stylo = {
-    // ...style,
-    fontFamily: 'Outfit-Regular !important',
-  };
-  // console.log(stylo);
+const CustomText: React.FC<CustomTextProps> = ({
+  style,
+  isBold,
+  children,
+  ...props
+}) => {
+  function fontType() {
+    if (isBold) {
+      return 'Bold';
+    }
+    return 'Regular';
+  }
   return (
-    <Text
-      {...props}
-      style={
-        // {...stylo}
-        {fontFamily: 'Outfit-Regular !important', ...style} // Set font explicitly here
-        // styles.text,
-        // style,
-      }>
+    <Text {...props} style={{fontFamily: `Outfit-${fontType()}`, ...style}}>
       {children}
     </Text>
   );
 };
-
-const styles = StyleSheet.create({
-  text: {
-    fontSize: 16,
-    color: '#000', // Optional: set a default color to confirm if styles are applied
-  },
-});
 
 export default CustomText;

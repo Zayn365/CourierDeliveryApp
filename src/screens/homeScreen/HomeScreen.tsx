@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {TouchableOpacity, View} from 'react-native';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import BottomSheet, {BottomSheetView} from '@gorhom/bottom-sheet';
@@ -9,18 +9,40 @@ import LocationButton from './components/LocationButton';
 import Map from './map/Map';
 import Header from '../../components/Ui/Header';
 import ProgressBar from './components/InProgressBar';
-import {useNavigation} from '@react-navigation/native';
+import {RouteProp, useNavigation, useRoute} from '@react-navigation/native';
+import usePlaceOrder from '../../utils/store/placeOrderStore';
+import useAuthStore from '../../utils/store/authStore';
+import {RootStackParamList} from '@utils/types/types';
+import MapTrack from './map/MapTrack';
+
+type HomeRouteProp = RouteProp<RootStackParamList, 'Home'>;
 
 const App: React.FC = () => {
+  const navigation: any = useNavigation();
+  const route = useRoute<HomeRouteProp>();
+  const param = route?.params;
   const bottomSheetRef = useRef<BottomSheet>(null);
   const [bottomSheetPosition, setBottomSheetPosition] = useState(0);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [reload, setReload] = useState(false);
+  // const [currentStep, setCurrentStep] = useState(1);
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
-  const navigation: any = useNavigation();
+  const data = usePlaceOrder();
+  const user = useAuthStore();
+  const {token} = user;
+  const {getUserOrders, currentStep, setCurrentStep, orders} = data;
+  const getOrdersOfUser = async () => {
+    const d = await getUserOrders(token);
+    // console.log(d);
+  };
+  useEffect(() => {
+    getOrdersOfUser();
+  }, []);
 
-  // Function to go to the next step
-  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 8));
-  const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+  useEffect(() => {
+    setCurrentStep(param ? param.stepToGo : 1);
+  }, [param]);
+  const nextStep = () => setCurrentStep(Math.min(currentStep + 1, 8));
+  const prevStep = () => setCurrentStep(Math.max(currentStep - 1, 1));
   const currentIndex =
     currentStep === 2 || currentStep === 5 || currentStep === 6
       ? 3
@@ -30,8 +52,6 @@ const App: React.FC = () => {
 
   const snapPoints = useMemo(() => ['5', '47', '55', '80'], []);
 
-  console.log(bottomSheetPosition, snapPoints);
-  // Handle bottom sheet changes
   const handleSheetChanges = useCallback((index: number) => {
     setIsSheetExpanded(index > 0);
     if (index === 4) {
@@ -40,6 +60,9 @@ const App: React.FC = () => {
       setBottomSheetPosition(index);
     }
   }, []);
+
+  // console.log('🚀 ~ orders:', orders);
+  // orders;
   return (
     <>
       <View style={{flex: 1}}>
@@ -47,9 +70,11 @@ const App: React.FC = () => {
         <GestureHandlerRootView style={homeStyles.overlay}>
           <Map currentStep={currentStep} />
           <Header currentStep={currentStep} />
-          <TouchableOpacity onPress={() => navigation.navigate('OrderList')}>
-            <ProgressBar />
-          </TouchableOpacity>
+          {currentStep === 1 && orders?.length > 0 && (
+            <TouchableOpacity onPress={() => navigation.navigate('OrderList')}>
+              <ProgressBar />
+            </TouchableOpacity>
+          )}
           {/* GoBack Button */}
           <GoBackButton
             snapPoints={snapPoints}
@@ -59,6 +84,7 @@ const App: React.FC = () => {
           />
           {/* Location Button */}
           <LocationButton
+            currentStep={currentStep}
             snapPoints={snapPoints}
             bottomSheetPosition={bottomSheetPosition}
           />
@@ -95,6 +121,7 @@ const App: React.FC = () => {
                 setCurrentStep={setCurrentStep}
                 nextStep={nextStep}
                 currentStep={currentStep}
+                shouldGet={param && param.stepToGo ? true : false}
               />
             </BottomSheetView>
           </BottomSheet>

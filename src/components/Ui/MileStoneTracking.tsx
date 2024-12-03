@@ -1,24 +1,29 @@
-import React from 'react';
-import {View} from 'react-native';
+import React, {useEffect, useRef} from 'react';
+import {StyleSheet, Animated, View} from 'react-native';
 import CustomText from './CustomText';
 import {homeStyles} from '../../assets/css/home';
 import Tick from '../../assets/images/icons/tickMilestone.svg';
 import Blank from '../../assets/images/icons/blinkMilestone.svg';
 import Line from '../../assets/images/icons/lineHorizontal.svg';
 
-type Props = {};
+type Props = {
+  colorless: boolean;
+  status?: string | number | any;
+};
 
-function MileStoneTracking({}: Props) {
+function MileStoneTracking({colorless, status}: Props) {
+  const blinkAnim = useRef(new Animated.Value(1)).current; // Initial opacity 1
+
   const properties = [
     {
       title: 'Assigned',
-      hasReached: true,
+      hasReached: false,
       willReach: false,
     },
     {
       title: 'Pick Up',
       hasReached: false,
-      willReach: true,
+      willReach: false,
     },
     {
       title: 'In Route',
@@ -26,7 +31,7 @@ function MileStoneTracking({}: Props) {
       willReach: false,
     },
     {
-      title: 'Near You',
+      title: 'Near By',
       hasReached: false,
       willReach: false,
     },
@@ -36,9 +41,54 @@ function MileStoneTracking({}: Props) {
       willReach: false,
     },
   ];
+
+  const statusIndex =
+    typeof status === 'string'
+      ? properties.findIndex(p => p.title === status)
+      : status - 1;
+
+  if (statusIndex >= 0) {
+    properties.forEach((item, index) => {
+      if (index < statusIndex) {
+        item.hasReached = true;
+        item.willReach = false;
+      } else if (index === statusIndex) {
+        item.hasReached = false;
+        item.willReach = true;
+      } else {
+        item.hasReached = false;
+        item.willReach = false;
+      }
+    });
+  }
+
+  useEffect(() => {
+    if (properties.some(p => p.willReach)) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(blinkAnim, {
+            toValue: 0.4,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(blinkAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]),
+      ).start();
+    }
+  }, [blinkAnim, properties]);
+
   return (
     <View>
-      <View style={homeStyles.trackingContainer}>
+      <View
+        style={
+          colorless
+            ? homeStyles.trackingContainerColorless
+            : homeStyles.trackingContainer
+        }>
         <View
           style={{
             flexDirection: 'row',
@@ -47,24 +97,27 @@ function MileStoneTracking({}: Props) {
             alignItems: 'center',
           }}>
           {properties.map((val, key) => (
-            <>
-              {val.hasReached === true ? (
+            <React.Fragment key={key}>
+              {val.hasReached ? (
                 <>
-                  <Tick key={val.title} />
-                  <Line key={key} style={{}} />
+                  <Tick />
+                  {key < properties.length - 1 && <Line />}
                 </>
-              ) : val.willReach === true ? (
+              ) : val.willReach ? (
                 <>
-                  <Blank key={val.title} />
-                  <Line key={key} style={{}} />
+                  <Animated.View
+                    style={[styles.blinkingIcon, {opacity: blinkAnim}]}>
+                    <Blank />
+                  </Animated.View>
+                  {key < properties.length - 1 && <Line />}
                 </>
               ) : (
                 <>
-                  <Blank key={val.title} style={{opacity: 0.6}} />
-                  {key < 4 ? <Line key={key} style={{}} /> : ''}
+                  <Blank style={{opacity: 0.6}} />
+                  {key < properties.length - 1 && <Line />}
                 </>
               )}
-            </>
+            </React.Fragment>
           ))}
         </View>
         <View
@@ -77,7 +130,7 @@ function MileStoneTracking({}: Props) {
             <CustomText
               key={val.title + key}
               style={
-                val.hasReached === true
+                val.hasReached
                   ? homeStyles.trackingStep
                   : homeStyles.trackingStepInactive
               }>
@@ -89,5 +142,15 @@ function MileStoneTracking({}: Props) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  blinkingIcon: {
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+});
 
 export default MileStoneTracking;

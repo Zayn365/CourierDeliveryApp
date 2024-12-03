@@ -5,6 +5,7 @@ export type RootStackParamList = {
   SignIn: undefined;
   Verify: {userId: string; email: string};
   SignUp: undefined;
+  Home: {stepToGo: string | number | any};
 };
 
 type VerifyScreenNavigationProp = StackNavigationProp<

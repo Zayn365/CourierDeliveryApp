@@ -1,9 +1,10 @@
 import {create} from 'zustand';
+import {persist} from 'zustand/middleware';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Alert} from 'react-native';
 
-const apiLink = `http://3.7.46.187:5002/user`;
+const apiLink = `http://65.0.45.223:5002/user`;
 
 interface User {
   id: number;
@@ -33,7 +34,7 @@ interface User {
 }
 
 interface StoreState {
-  user: User | Promise<any> | null;
+  user: User | null;
   token: string | null;
   isLoading: boolean;
   error: string | null;
@@ -46,199 +47,152 @@ interface StoreState {
   login: (
     phone: string,
     password: string,
-  ) =>
-    | Promise<void>
-    | Promise<false | {userId: any; check: boolean} | undefined>;
-  verify: (
-    userId: string,
-    otp: string,
-  ) => Promise<void> | Promise<boolean | undefined>;
-  resend: (
-    email: string,
-    type: string,
-  ) => Promise<void> | Promise<boolean | undefined>;
+  ) => Promise<false | void | {userId: any; check: boolean}>;
+  verify: (userId: string, otp: string) => Promise<boolean>;
+  resend: (email: string, type: string) => Promise<boolean>;
   signup: (
     name: string,
     email: string,
     password: string,
     mobile: string | number,
-  ) =>
-    | Promise<void>
-    | Promise<false | {userId: any; check: boolean} | undefined>;
+  ) => Promise<false | {userId: any; check: boolean}>;
   fetchUserData: () => Promise<void>;
   initializeUser: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
-// @ts-ignore
+const useAuthStore = create<StoreState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      token: null,
+      isLoading: false,
+      error: null,
 
-const useAuthStore = create<StoreState>((set, get) => ({
-  user: null,
-  token: '',
-  isLoading: false,
-  error: null,
+      setUser: user => set({user}),
+      setToken: token => set({token}),
+      setLoading: isLoading => set({isLoading}),
+      setError: error => set({error}),
 
-  setUser: user => set({user}),
-  setToken: token => set({token}),
-  setLoading: isLoading => set({isLoading}),
-  setError: error => set({error}),
+      login: async (phone, password) => {
+        set({isLoading: true, error: null});
+        try {
+          const phoneString = phone.toString();
+          const response: any = await axios.post(`${apiLink}/login`, {
+            mobile: phoneString,
+            password,
+          });
 
-  login: async (phone, password) => {
-    set({isLoading: true, error: null});
-    try {
-      const phoneString = phone.toString();
-      console.log(`Phone: ${phoneString}, Password: ${password}`);
-      const response: any = await axios.post(`${apiLink}/login`, {
-        mobile: phoneString,
-        password: password,
-      });
+          if (response?.data?.data) {
+            const {user, token} = response.data.data;
+            set({user, token});
+            await AsyncStorage.setItem('token', token);
+            await AsyncStorage.setItem('user', JSON.stringify(user));
+          } else {
+            throw new Error('Invalid response from server.');
+          }
+        } catch (error: any) {
+          const errorMessage =
+            error.response?.data?.message ||
+            error.response?.data?.data?.[0]?.msg ||
+            'An unexpected error occurred. Please try again.';
+          set({error: errorMessage});
+          Alert.alert('Error', errorMessage);
+          return false;
+        } finally {
+          set({isLoading: false});
+        }
+      },
 
-      if (response && response.data) {
-        const {user, token} = response.data?.data;
-        console.log(`User: ${JSON.stringify(user)}, Token: ${token}`);
-        set({user, token});
-        await AsyncStorage.setItem('token', token);
-        await AsyncStorage.setItem('user', JSON.stringify(user));
-      } else {
-        throw new Error('Invalid response from server.');
-      }
-    } catch (error: any) {
-      console.error('Error occurred during login:', error);
-      const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.data?.[0]?.msg ||
-        'An unexpected error occurred. Please try again.';
-      set({error: errorMessage, isLoading: false});
-      Alert.alert('Error', errorMessage);
-      return false;
-    } finally {
-      set({isLoading: false});
-    }
-  },
+      verify: async (userId, otp) => {
+        set({isLoading: true, error: null});
+        try {
+          await axios.post(`${apiLink}/verify-otp`, {userId, otp});
+          return true;
+        } catch (error: any) {
+          const errorMessage =
+            error.response?.data?.message || 'Verification failed.';
+          set({error: errorMessage});
+          Alert.alert('Error', errorMessage);
+          return false;
+        } finally {
+          set({isLoading: false});
+        }
+      },
 
-  verify: async (userId, otp) => {
-    set({isLoading: true, error: null});
-    try {
-      console.log('verify');
-      await axios
-        .post(`${apiLink}/verify-otp`, {
-          userId,
-          otp,
-        })
-        .then(response => {
-          // console.log(response, 'I ran');
-          // Alert.alert('OTP verified successfully');
-        })
-        .catch(err => {
-          console.log(err.response.data, 'I ERROR ran');
-          Alert.alert(err.response.data.message);
-          return;
-        });
-      return true;
-    } catch (error: any) {
-      set({error: error.message, isLoading: false});
-      const Error = error.response.data.data
-        ? error.response.data.data.errors
-          ? error.response.data.data.errors[0]?.msg
-          : error.response.data.data.error
-        : 'Something went wrong';
-      Alert.alert('Error', Error);
-      return false;
-    } finally {
-      set({isLoading: false});
-    }
-  },
+      signup: async (name, email, password, mobile) => {
+        set({isLoading: true, error: null});
+        try {
+          const response: any = await axios.post(`${apiLink}/signup`, {
+            name,
+            email,
+            password,
+            mobile,
+          });
 
-  signup: async (name, email, password, mobile) => {
-    set({isLoading: true, error: null});
+          const {userId} = response.data.data;
+          return {userId, check: true};
+        } catch (error: any) {
+          const errorMessage =
+            error.response?.data?.message || 'Signup failed.';
+          set({error: errorMessage});
+          Alert.alert('Error', errorMessage);
+          return false;
+        } finally {
+          set({isLoading: false});
+        }
+      },
 
-    try {
-      const response: any = await axios
-        .post(`${apiLink}/signup`, {
-          name,
-          email,
-          password,
-          mobile,
-        })
-        .then(response => {
-          // console.log(response.data.data, 'I ran');
-          // Alert.alert('OTP verified successfully');
-          return response.data;
-        })
-        .catch(err => {
-          console.log(err.response.data, 'I ERROR ran');
-          Alert.alert(err.response.data.message);
-          return;
-        });
-      const {userId} = response?.data;
-      return {userId, check: true};
-      // Alert.alert('User Created Successfully');
-    } catch (error: any) {
-      set({error: error.message, isLoading: false});
-      console.log(error.response.data.data);
-      const Error = error.response.data.data
-        ? error.response.data.data.errors
-          ? error.response.data.data.errors[0]?.msg
-          : error.response.data.data.error
-        : 'Something went wrong';
-      Alert.alert('Error', Error);
-      return false;
-    } finally {
-      set({isLoading: false});
-    }
-  },
-  resend: async (email, type) => {
-    const response = await axios
-      .post(`${apiLink}/resend-otp`, {
-        email,
-        type,
-      })
-      .then(response => {
-        // console.log(response, 'I ran');
-        Alert.alert('OTP sent successfully');
-      })
-      .catch(error => {
-        set({error: error.message, isLoading: false});
-        console.log(error.response.data.data);
-        const Error = error.response.data.data
-          ? error.response.data.data.errors
-            ? error.response.data.data.errors[0]?.msg
-            : error.response.data.data.error
-          : 'Something went wrong';
-        Alert.alert('Error', Error);
-        return false;
-      });
-  },
-  fetchUserData: async () => {
-    const token = get().token;
-    if (!token) return;
+      resend: async (email, type) => {
+        try {
+          await axios.post(`${apiLink}/resend-otp`, {email, type});
+          Alert.alert('OTP sent successfully');
+          return true;
+        } catch (error: any) {
+          const errorMessage =
+            error.response?.data?.message || 'Failed to resend OTP.';
+          set({error: errorMessage});
+          Alert.alert('Error', errorMessage);
+          return false;
+        }
+      },
 
-    set({isLoading: true});
-    try {
-      const response: any = await axios.get(apiLink, {
-        headers: {Authorization: `Bearer ${token}`},
-      });
-      set({user: response.data});
-    } catch (err: any) {
-      set({error: err.message});
-    } finally {
-      set({isLoading: false});
-    }
-  },
+      fetchUserData: async () => {
+        const token = get().token;
+        if (!token) return;
 
-  initializeUser: async () => {
-    const token = await AsyncStorage.getItem('token');
-    const user = await AsyncStorage.getItem('user');
+        set({isLoading: true});
+        try {
+          const response: any = await axios.get(apiLink, {
+            headers: {Authorization: `Bearer ${token}`},
+          });
+          set({user: response.data});
+        } catch (error: any) {
+          set({error: error.message});
+        } finally {
+          set({isLoading: false});
+        }
+      },
 
-    if (token && user) {
-      set({token, user: JSON.parse(user)});
-    }
-  },
+      initializeUser: async () => {
+        const token = await AsyncStorage.getItem('token');
+        const user = await AsyncStorage.getItem('user');
 
-  logout: async () => {
-    await AsyncStorage.clear();
-    set({user: null, token: null});
-  },
-}));
+        if (token && user) {
+          set({token, user: JSON.parse(user)});
+        }
+      },
+
+      logout: async () => {
+        await AsyncStorage.clear();
+        set({user: null, token: null});
+      },
+    }),
+    {
+      name: 'user-storage',
+      partialize: state => ({user: state.user}),
+    },
+  ),
+);
 
 export default useAuthStore;

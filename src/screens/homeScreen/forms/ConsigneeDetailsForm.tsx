@@ -28,7 +28,7 @@ const ConsigneeDetails: React.FC<Props> = ({
   const {getPricing, price, isLoading} = data;
 
   async function getPrice() {
-    console.log(packageData.pickUpLat, 'DATAS');
+    // console.log(packageData.pickUpLat, 'DATAS');
     const values = {
       pickUpAddress: {
         latitude: `${packageData.pickUpLat}`,
@@ -38,12 +38,14 @@ const ConsigneeDetails: React.FC<Props> = ({
         latitude: `${packageData.consigneeLat}`,
         longitude: `${packageData.consigneeLong}`,
       },
-      parcelType: packageData.paymentType,
+      parcelType: packageData.parcelType,
       weight: Number(packageData.weight),
       parcelWorth: Number(ParcelWorth),
     };
+    console.log('🚀 ~ getPrice ~ values:', values);
     try {
       const val = getPricing(values, token);
+      console.log('🚀 ~ getPrice ~ token:', token);
       return val;
     } catch (e: any) {
       console.error('Error occurred while getting pricing', e);
@@ -62,7 +64,6 @@ const ConsigneeDetails: React.FC<Props> = ({
           consigneeEmail: consigneeEmail,
         };
       });
-      console.log(packageData);
       nextStep();
     } else {
       Alert.alert('Something is missing! Please Fill All The Feilds');

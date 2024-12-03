@@ -26,6 +26,8 @@ const OrderSummaryForm: React.FC<Props> = ({
   token,
 }) => {
   const placeOrder: any = usePlaceOrder();
+  const map: any = useMapStore();
+  const {distance} = map;
   const {placeOrderApi, isLoading, price} = placeOrder;
   console.log(price);
   const data: any = useMapStore();
@@ -36,10 +38,15 @@ const OrderSummaryForm: React.FC<Props> = ({
         return {
           ...prevData,
           paymentType: COD ? 1 : 2,
+          estDistance: distance,
         };
       });
-      await placeOrderApi(packageData, token);
-      nextStep();
+      console.log(packageData, 'What are you');
+
+      const d = await placeOrderApi(packageData, token);
+      if (d) {
+        nextStep();
+      }
     } else {
       Alert.alert('Something is missing!');
     }

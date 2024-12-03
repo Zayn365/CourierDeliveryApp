@@ -1,5 +1,5 @@
 import {View} from 'react-native';
-import React from 'react';
+import React, {useEffect} from 'react';
 import Animated from 'react-native-reanimated';
 import {homeStyles} from '../../../assets/css/home';
 import Icons from '../../../utils/imagePaths/imagePaths';
@@ -9,9 +9,14 @@ import useMapStore from '../../../utils/store/mapStore';
 type Prop = {
   snapPoints: Array<any>;
   bottomSheetPosition: any;
+  currentStep: number;
 };
 
-const LocationButton: React.FC<Prop> = ({snapPoints, bottomSheetPosition}) => {
+const LocationButton: React.FC<Prop> = ({
+  snapPoints,
+  bottomSheetPosition,
+  currentStep,
+}) => {
   const data: any = useMapStore();
 
   const {fetchAddress, setCurrentLocation} = data;
@@ -30,19 +35,23 @@ const LocationButton: React.FC<Prop> = ({snapPoints, bottomSheetPosition}) => {
       console.error('Error fetching location:', error);
     }
   };
-
+  // useEffect(() => {
+  //   getCurrentLocation();
+  // }, []);
   return (
     <>
-      <Animated.View
-        style={[
-          homeStyles.LocationButton,
-          // @ts-ignore
-          {bottom: `${snapPoints[bottomSheetPosition]}%`},
-        ]}>
-        {/* <TouchableOpacity> */}
-        <Icons.LocationIcon onPress={getCurrentLocation} />
-        {/* </TouchableOpacity> */}
-      </Animated.View>
+      {currentStep !== 6 && currentStep !== 66 ? (
+        <Animated.View
+          style={[
+            homeStyles.LocationButton,
+            // @ts-ignore
+            {bottom: `${snapPoints[bottomSheetPosition]}%`},
+          ]}>
+          {/* <TouchableOpacity> */}
+          <Icons.LocationIcon onPress={getCurrentLocation} />
+          {/* </TouchableOpacity> */}
+        </Animated.View>
+      ) : null}
     </>
   );
 };

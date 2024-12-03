@@ -8,34 +8,42 @@ import MileStoneTracking from '../../../components/Ui/MileStoneTracking';
 import CustomButton from '../../../components/Ui/CustomButton';
 import useMapStore from '../../../utils/store/mapStore';
 import usePlaceOrder from '../../../utils/store/placeOrderStore';
+import {
+  getPaymentTypeText,
+  OrderIdSpliter,
+  getParcelTypeText,
+  onShare,
+} from '../../../utils/helper/helperFunctions';
+import useAuthStore from '../../../utils/store/authStore';
+import {useNavigation} from '@react-navigation/native';
 
 type Props = {
   setCurrentStep: React.Dispatch<React.SetStateAction<number>>;
 };
 
-const cancelTime = '05:27';
 const etaPickup = '09:46 PM';
 const etaDate = '12 Dec 2024';
 
 const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep}) => {
+  const navigation: any = useNavigation();
   const [isShow, setIsShow] = useState<Boolean>(false);
   const data: any = useMapStore();
   const priceData: any = usePlaceOrder();
+  const {user}: any = useAuthStore();
   const {price, placeOrderData} = priceData;
+
   const {currentAddress, destinationAddress} = data;
   const [timeRemaining, setTimeRemaining] = useState(5 * 60); // 5 minutes in seconds
-
   useEffect(() => {
     if (timeRemaining > 0) {
       const interval = setInterval(() => {
         setTimeRemaining(prev => prev - 1);
       }, 1000);
 
-      return () => clearInterval(interval); // Cleanup the interval on component unmount
+      return () => clearInterval(interval);
     }
   }, [timeRemaining]);
 
-  // Format time as MM:SS
   const formatTime = (time: any) => {
     const minutes = Math.floor(time / 60);
     const seconds = time % 60;
@@ -44,31 +52,30 @@ const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep}) => {
       .padStart(2, '0')}`;
   };
 
-  const parcelType = () => {
-    if (placeOrderData?.parcelType == 1) {
-      const weight = placeOrderData?.weight;
-      return `Parcel, ${weight} KG/s`;
-    } else {
-      return 'Document';
-    }
-  };
+  const parcelType = getParcelTypeText(Number(placeOrderData?.parcelType));
+  const OrderNo = OrderIdSpliter(placeOrderData?.orderId);
+  const paymentType = getPaymentTypeText(placeOrderData?.paymentType);
+  const pickUp = currentAddress
+    ? currentAddress
+    : placeOrderData
+    ? `${placeOrderData?.pickUpAddress},${placeOrderData?.pickUpArea},Karachi`
+    : 'L7, Work Hall Motif, Block-21, F.B Area, Karachi';
+  const drop = destinationAddress
+    ? destinationAddress
+    : placeOrderData
+    ? `${placeOrderData?.consigneeAddress},${placeOrderData?.consigneeLandmark},Karachi`
+    : 'L7, Work Hall Motif, Block-21, F.B Area, Karachi';
+  const message = `Hello,
 
-  const paymntType = () => {
-    if (placeOrderData?.paymentType == 1) {
-      return `Cash`;
-    } else if (placeOrderData?.paymentType == 2) {
-      return 'Card';
-    } else {
-      return 'Wallet';
-    }
-  };
+I (${user?.name}) have sent you a parcel through TCS Now! 
 
-  const OrderIdSpliter = () => {
-    const orderId = placeOrderData?.orderId;
-    const splitId = orderId?.split('-')[0];
-    return `TCSN${splitId}`;
-  };
+Order Number: ${OrderNo}  
+Parcel Type: ${parcelType}  
+Payment Method: ${paymentType}  
 
+If you have any questions, please contact the TCS Helpline at +92 21 111 123 456.
+
+Thank you!`;
   return (
     <View style={homeStyles.ViewScrollable}>
       <ScrollView
@@ -94,9 +101,7 @@ const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep}) => {
                 borderColor: '#DCE4F1',
               }}>
               <CustomText style={homeStyles.orderLabel}>Order#</CustomText>
-              <CustomText style={homeStyles.orderNumber}>
-                {OrderIdSpliter()}
-              </CustomText>
+              <CustomText style={homeStyles.orderNumber}>{OrderNo}</CustomText>
             </View>
             <View
               style={{
@@ -115,16 +120,46 @@ const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep}) => {
           </View>
 
           {/* Milestone Tracking */}
-          <MileStoneTracking />
+          <MileStoneTracking
+            status={
+              placeOrderData?.orderStatus ? placeOrderData?.orderStatus : 1
+            }
+            colorless={false}
+          />
           {/* Assistance Section */}
           <View style={homeStyles.assistanceSection}>
-            <CustomText style={homeStyles.assistanceLabel}>
+            {/* <CustomText style={homeStyles.assistanceLabel}>
               Do you need assistance?
-            </CustomText>
+            </CustomText> */}
             <View style={homeStyles.assistanceActions}>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Chat')}>
                 <Icons.Message />
                 {/* <CustomText style={hometyles.callButton}>Call</CustomText> */}
+              </TouchableOpacity>
+            </View>
+            <View
+              style={{
+                flexDirection: 'column',
+                borderColor: '#DCE4F1',
+                borderLeftWidth: 1,
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '50%',
+              }}>
+              <TouchableOpacity onPress={() => onShare(message)}>
+                <View
+                  style={{
+                    padding: 10,
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderRadius: 60,
+                  }}>
+                  <Icons.Whatsapp />
+                </View>
+                <CustomText isBold={false} style={homeStyles.callButton}>
+                  Share on Whatsapp
+                </CustomText>
               </TouchableOpacity>
             </View>
           </View>
@@ -159,7 +194,9 @@ const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep}) => {
                         Parcel Type
                       </CustomText>
                       <CustomText style={homeStyles.mySubText}>
-                        {parcelType()}
+                        {parcelType}
+                        {Number(placeOrderData.parcelType) === 1 &&
+                          ` (${placeOrderData?.weight} KG/s)`}
                       </CustomText>
                     </View>
                   </View>
@@ -171,9 +208,7 @@ const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep}) => {
                         Pickup
                       </CustomText>
                       <CustomText style={homeStyles.mySubText}>
-                        {currentAddress
-                          ? currentAddress
-                          : 'L7, Work Hall Motif, Block-21, F.B Area, Karachi'}
+                        {pickUp}
                       </CustomText>
                     </View>
                   </View>
@@ -186,36 +221,41 @@ const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep}) => {
                         Delivery
                       </CustomText>
                       <CustomText style={homeStyles.mySubText}>
-                        {destinationAddress
-                          ? destinationAddress
-                          : 'C-90, Khayaban-e-sehar, Phase VI, DHA, Near Sultan Masjid, Karachi.'}
+                        {drop}
                       </CustomText>
                     </View>
                   </View>
 
                   <View style={homeStyles.priceArea}>
-                    <View style={homeStyles.priceAreaListThankYouPage}>
-                      <CustomText style={homeStyles.lightFont}>
-                        Sub-total:{' '}
-                      </CustomText>
-                      <CustomText style={homeStyles.lightFont}>
-                        Rs. {price.ordrPrice}
-                      </CustomText>
-                    </View>
-                    <View style={homeStyles.priceAreaListThankYouPage}>
-                      <CustomText style={homeStyles.lightFont}>
-                        Parcel Insurance:{' '}
-                      </CustomText>
-                      <CustomText style={homeStyles.lightFont}>
-                        Rs. {price.insurancePricing}
-                      </CustomText>
-                    </View>
+                    {price ? (
+                      <>
+                        <View style={homeStyles.priceAreaListThankYouPage}>
+                          <CustomText style={homeStyles.lightFont}>
+                            Sub-total:{' '}
+                          </CustomText>
+                          <CustomText style={homeStyles.lightFont}>
+                            Rs. {price.orderPrice}
+                          </CustomText>
+                        </View>
+                        <View style={homeStyles.priceAreaListThankYouPage}>
+                          <CustomText style={homeStyles.lightFont}>
+                            Parcel Insurance:{' '}
+                          </CustomText>
+                          <CustomText style={homeStyles.lightFont}>
+                            Rs. {price.insurancePricing}
+                          </CustomText>
+                        </View>
+                      </>
+                    ) : null}
                     <View style={homeStyles.priceAreaListThankYouPage}>
                       <CustomText style={homeStyles.lightFont}>
                         Total (incl fees and tax){' '}
                       </CustomText>
                       <CustomText style={homeStyles.BoldFontLarge}>
-                        Rs. {price.totalPrice}
+                        Rs.{' '}
+                        {price.totalPrice
+                          ? price.totalPrice
+                          : placeOrderData?.price}
                       </CustomText>
                     </View>
                     <View style={homeStyles.priceAreaListThankYouPage}>
@@ -223,7 +263,7 @@ const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep}) => {
                         Payment Method
                       </CustomText>
                       <CustomText style={homeStyles.lightFont}>
-                        {paymntType()}
+                        {paymentType}
                       </CustomText>
                     </View>
                   </View>

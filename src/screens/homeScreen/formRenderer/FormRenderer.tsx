@@ -1,5 +1,5 @@
 import {Text, View} from 'react-native';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import PickUpAdressForm from '../forms/PickUpAdressForm';
 import ParcelDocumentForm from '../forms/ParcelDocumentForm';
 import ConsigneeAddressForm from '../forms/ConsigneeAddressForm';
@@ -8,18 +8,22 @@ import OrderSummaryForm from '../forms/OrderSummaryForm';
 import ThankYouFormDetails from '../forms/ThankYouFormDetails';
 import PaymentMethodSelection from '../forms/PaymentMethodSelection';
 import useAuthStore from '../../../utils/store/authStore';
+import usePlaceOrder from '../../../utils/store/placeOrderStore';
 
 type Prop = {
   currentStep: number;
   nextStep: () => void;
   setCurrentStep: React.Dispatch<React.SetStateAction<number>>;
+  shouldGet: boolean;
 };
 const FormRenderer: React.FC<Prop> = ({
   currentStep,
   nextStep,
   setCurrentStep,
+  shouldGet,
 }) => {
   const {user, token}: any = useAuthStore();
+  const {placeOrderData}: any = usePlaceOrder();
   const [packageData, setPackageData] = useState({
     user_id: user?.userId,
     parcelType: 2,
@@ -57,7 +61,12 @@ const FormRenderer: React.FC<Prop> = ({
   const [dropdown, setDropdown] = useState('Karachi');
   const [COD, setCOD] = useState(false);
   const toggleSwitch = () => setIsEnabled(previousState => !previousState);
-  console.log(packageData, 'CHECK ME OUT');
+  useEffect(() => {
+    if (shouldGet) {
+      // getPackageDetails();
+      setPackageData(placeOrderData);
+    }
+  }, []);
   switch (currentStep) {
     case 1:
       return (

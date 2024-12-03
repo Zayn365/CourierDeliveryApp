@@ -5,6 +5,7 @@ import SplashScreen from './src/screens/splashScreen/SplashScreen';
 import AuthRouter from './src/components/router/AuthRouter';
 import MainRouter from './src/components/router/MainRouter';
 import useAuthStore from './src/utils/store/authStore';
+
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
     }, 3000);
     initializeUser();
   }, []);
+
   console.log(user, 'check me');
   return (
     <SafeAreaView style={{flex: 1}}>
