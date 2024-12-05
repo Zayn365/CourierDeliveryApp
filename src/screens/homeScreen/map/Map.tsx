@@ -21,6 +21,7 @@ const Map: React.FC<Prop> = ({currentStep}) => {
     longitude: 67.1681,
   });
   const {riderId} = usePlaceOrder();
+  console.log('🚀 ~ riderId:', riderId);
   useEffect(() => {
     if (!riderId) return;
     GetRiderLocaton(riderId, setRiderData);
@@ -77,10 +78,7 @@ const Map: React.FC<Prop> = ({currentStep}) => {
     adjustMapToCoordinates(currentLocation);
     adjustMapToCoordinates(destination);
   }, [currentLocation]);
-  console.log(
-    `${currentLocation.latitude}-${currentLocation.longitude}`,
-    'Cheeck it',
-  );
+
   return (
     <MapView
       ref={mapRef}

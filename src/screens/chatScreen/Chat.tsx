@@ -1,38 +1,80 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
-  StyleSheet,
-  Text,
   View,
-  TextInput,
   TouchableOpacity,
   FlatList,
   Image,
+  Text,
   Alert,
 } from 'react-native';
 import {launchImageLibrary, Asset} from 'react-native-image-picker';
-import {pick, DocumentPickerResponse} from 'react-native-document-picker';
 import AudioRecorderPlayer from 'react-native-audio-recorder-player';
-import Svg, {Path} from 'react-native-svg';
+import CustomText from '../../components/Ui/CustomText';
+import CustomInput from '../../components/Ui/CustomInput';
+import moment from 'moment';
+import {DocumentPickerResponse, pick} from 'react-native-document-picker';
 import Icons from '../../utils/imagePaths/imagePaths';
+import Svg, {Path} from 'react-native-svg';
+import {chat} from '../../assets/css/chat';
+import useChatStore from '../../utils/store/chatStore';
+import useAuthStore from '../../utils/store/authStore';
 
 const audioRecorderPlayer = new AudioRecorderPlayer();
 
 interface Message {
-  type: 'text' | 'image' | 'document' | 'audio';
-  content: string;
+  type: 'text' | 'image' | 'file' | 'audio';
+  content: any;
+  by: 'user' | 'agent';
+  timestamp: string;
 }
-
+const date = new Date().toISOString();
 const Chat: React.FC = () => {
+  const chatData: any = useChatStore();
+  const {currentChatId, getChatByID, sendMessageApi, chats} = chatData;
+  const {token} = useAuthStore();
   const [message, setMessage] = useState<string>('');
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [recordingPath, setRecordingPath] = useState<any>(null);
   const [recording, setRecording] = useState<boolean>(false);
-  const [recordingPath, setRecordingPath] = useState<string>('');
-
-  const sendMessage = () => {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      type: 'text',
+      content: 'How Can I Help You?',
+      by: 'agent',
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+  useEffect(() => {
+    getChatByID(token);
+  }, []);
+  const sendMessage = async () => {
+    getChatByID(token);
     if (message.trim() === '') return;
-
-    setMessages([...messages, {type: 'text', content: message}]);
+    const newMessage: Message = {
+      type: 'text',
+      content: message,
+      by: 'user',
+      timestamp: new Date().toISOString(),
+    };
+    console.log(
+      newMessage.type,
+      newMessage.content,
+      newMessage.by,
+      token,
+      'DEKH',
+    );
+    await sendMessageApi(newMessage.content, newMessage.type, token, undefined);
+    setMessages([...messages, newMessage]);
     setMessage('');
+  };
+
+  const renderDateHeader = (timestamp: string) => {
+    const date = moment(timestamp).startOf('day');
+    const now = moment().startOf('day');
+    const diffDays = now.diff(date, 'days');
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    return moment(timestamp).format('MMMM DD, YYYY');
   };
 
   const pickImage = async () => {
@@ -42,28 +84,38 @@ const Chat: React.FC = () => {
 
     if (result.assets && result.assets.length > 0) {
       const imageUri = (result.assets[0] as Asset).uri!;
-      setMessages([...messages, {type: 'image', content: imageUri}]);
+      await sendMessageApi(undefined, 'image', token, imageUri);
+      setMessages([
+        ...messages,
+        {type: 'image', content: imageUri, by: 'user', timestamp: date},
+      ]);
     }
   };
 
   const pickDocument = async () => {
     try {
-      // const result = await DocumentPicker.pick({
-      //   type: [DocumentPicker.types.allFiles],
-      // });
       const [result] = await pick({
         mode: 'open',
       });
-      console.log(result);
-      // const documentUri = (result[0] as DocumentPickerResponse).uri;
-      // setMessages([...messages, {type: 'document', content: documentUri}]);
+      const documentUri = (result as DocumentPickerResponse).uri;
+      const documentName = result.name || 'Unknown File';
+      const documentType = result.type || 'application/octet-stream'; // Default MIME type
+
+      // Call your API to send the file
+      await sendMessageApi(undefined, 'file', token, result);
+      console.log('🚀 ~ pickDocument ~ result:', result);
+
+      setMessages([
+        ...messages,
+        {
+          type: 'file',
+          content: {name: result.name, type: result.type},
+          by: 'user',
+          timestamp: date,
+        },
+      ]);
     } catch (err) {
-      // if (DocumentPicker.isCancel(err)) {
-      //   Alert.alert('Cancelled', 'Document picker was cancelled.');
-      // } else {
-      console.log(err);
-      Alert.alert('Error', 'An unknown error occurred.');
-      // }
+      console.error(err);
     }
   };
 
@@ -81,51 +133,73 @@ const Chat: React.FC = () => {
     try {
       const result = await audioRecorderPlayer.stopRecorder();
       setRecording(false);
-      setMessages([...messages, {type: 'audio', content: recordingPath}]);
+      setMessages([
+        ...messages,
+        {type: 'audio', content: recordingPath, by: 'user', timestamp: date},
+      ]);
       setRecordingPath('');
     } catch (error) {
       Alert.alert('Error', 'Failed to stop recording.');
     }
   };
 
-  const renderMessage = ({item}: {item: Message}) => {
-    switch (item.type) {
-      case 'text':
-        return <Text style={styles.textMessage}>{item.content}</Text>;
-      case 'image':
-        return (
-          <Image
-            source={{uri: item.content}}
-            style={styles.imageMessage}
-            resizeMode="contain"
-          />
-        );
-      case 'document':
-        return (
-          <Text style={styles.documentMessage}>
-            Document: {item.content.split('/').pop()}
+  const renderMessage = ({item, index}: {item: Message; index: number}) => {
+    const showDateHeader =
+      index === 0 ||
+      !moment(messages[index - 1].timestamp).isSame(item.timestamp, 'day');
+
+    return (
+      <View>
+        {showDateHeader && (
+          <View>
+            <CustomText style={chat.dateHeader}>
+              {renderDateHeader(item.timestamp)}
+            </CustomText>
+          </View>
+        )}
+        <View
+          style={[
+            item.by === 'user'
+              ? chat.messageContainerUser
+              : chat.messageContainerAgent,
+          ]}>
+          {item.type === 'text' && (
+            <CustomText style={chat.messageText}>{item.content}</CustomText>
+          )}
+          {item.type === 'image' && (
+            <Image
+              source={{uri: item.content}}
+              style={chat.messageImage}
+              resizeMode="contain"
+            />
+          )}
+          {item.type === 'file' && (
+            <>
+              <Image
+                source={Icons.file}
+                style={{width: 100, height: 100}}
+                resizeMode="contain"
+              />
+              <CustomText>{item?.content?.name}</CustomText>
+            </>
+          )}
+          <Text style={chat.timestamp}>
+            {moment(item.timestamp).format('hh:mm A')}
           </Text>
-        );
-      case 'audio':
-        return (
-          <Text style={styles.audioMessage}>
-            Audio: {item.content.split('/').pop()}
-          </Text>
-        );
-      default:
-        return null;
-    }
+        </View>
+      </View>
+    );
   };
 
   return (
-    <View style={styles.container}>
+    <View style={chat.container}>
       <FlatList
         data={messages}
         keyExtractor={(_, index) => index.toString()}
         renderItem={renderMessage}
-        contentContainerStyle={styles.messageList}
+        contentContainerStyle={chat.messageList}
       />
-      <View style={styles.inputContainer}>
+      <View style={chat.inputContainer}>
         <TouchableOpacity
           style={{
             backgroundColor: 'black',
@@ -156,12 +230,13 @@ const Chat: React.FC = () => {
             />
           </Svg>
         </TouchableOpacity>
-        <TextInput
-          style={styles.input}
-          placeholder="Type a message"
-          value={message}
-          onChangeText={setMessage}
-        />
+        <View style={chat.input}>
+          <CustomInput
+            placeholder="Type a message"
+            value={message}
+            setValue={setMessage}
+          />
+        </View>
         <TouchableOpacity onPress={sendMessage}>
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
             <Path
@@ -174,54 +249,5 @@ const Chat: React.FC = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1 / 2,
-    backgroundColor: '#fff',
-  },
-  messageList: {
-    padding: 10,
-  },
-  textMessage: {
-    backgroundColor: '#f0f0f0',
-    padding: 10,
-    borderRadius: 10,
-    marginVertical: 5,
-    alignSelf: 'flex-start',
-  },
-  imageMessage: {
-    width: 200,
-    height: 200,
-    borderRadius: 10,
-    marginVertical: 5,
-    alignSelf: 'flex-start',
-  },
-  documentMessage: {
-    color: '#007BFF',
-    marginVertical: 5,
-    alignSelf: 'flex-start',
-  },
-  audioMessage: {
-    color: '#007BFF',
-    marginVertical: 5,
-    alignSelf: 'flex-start',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderTopWidth: 1,
-    borderColor: '#ddd',
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    marginHorizontal: 10,
-  },
-});
 
 export default Chat;

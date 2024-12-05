@@ -1,4 +1,4 @@
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {StyleSheet, TouchableOpacity, View} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import {ScrollView} from 'react-native-gesture-handler';
 import {homeStyles} from '../../../assets/css/home';
@@ -8,6 +8,7 @@ import MileStoneTracking from '../../../components/Ui/MileStoneTracking';
 import CustomButton from '../../../components/Ui/CustomButton';
 import useMapStore from '../../../utils/store/mapStore';
 import usePlaceOrder from '../../../utils/store/placeOrderStore';
+import useChatStore from '../../../utils/store/chatStore';
 import {
   getPaymentTypeText,
   OrderIdSpliter,
@@ -25,12 +26,14 @@ const etaPickup = '09:46 PM';
 const etaDate = '12 Dec 2024';
 
 const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep}) => {
+  const chat: any = useChatStore();
   const navigation: any = useNavigation();
   const [isShow, setIsShow] = useState<Boolean>(false);
   const data: any = useMapStore();
   const priceData: any = usePlaceOrder();
-  const {user}: any = useAuthStore();
+  const {user, token}: any = useAuthStore();
   const {price, placeOrderData} = priceData;
+  const {createChatRoom, currentChatId} = chat;
 
   const {currentAddress, destinationAddress} = data;
   const [timeRemaining, setTimeRemaining] = useState(5 * 60); // 5 minutes in seconds
@@ -132,7 +135,13 @@ Thank you!`;
               Do you need assistance?
             </CustomText> */}
             <View style={homeStyles.assistanceActions}>
-              <TouchableOpacity onPress={() => navigation.navigate('Chat')}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (!currentChatId) {
+                    createChatRoom('Chat Intialized', token);
+                  }
+                  navigation.navigate('Chat');
+                }}>
                 <Icons.Message />
                 {/* <CustomText style={hometyles.callButton}>Call</CustomText> */}
               </TouchableOpacity>

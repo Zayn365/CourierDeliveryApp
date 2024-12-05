@@ -36,6 +36,7 @@ import LogOut from '../../assets/images/icons/logout.svg';
 const pickUp = require('../../assets/images/icons/pickup100.png');
 const rider = require('../../assets/images/icons/rider2.png');
 const destination = require('../../assets/images/icons/destination80.png');
+const file = require('../../assets/images/icons/file.png');
 
 const Icons = {
   MapIcon,
@@ -76,6 +77,7 @@ const Icons = {
   Avatar,
   CubeWhite,
   LogOut,
+  file,
 };
 
 export default Icons;

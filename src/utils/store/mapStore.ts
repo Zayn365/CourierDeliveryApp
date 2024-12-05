@@ -101,7 +101,7 @@ const useMapStore = create((set, get) => ({
     try {
       const res = axios
         .get(
-          `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${input}&key=${ApiKey}&components=country:pk`,
+          `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${input}&key=${ApiKey}&components=country:pk&location=24.8607,67.0011&radius=20000`,
         )
         .then((resposne: any) => {
           // console.log(resposne.data.predictions);

@@ -13,6 +13,7 @@ import Icons from '../../../utils/imagePaths/imagePaths';
 import CustomInput from '../../../components/Ui/CustomInput';
 import CustomButton from '../../../components/Ui/CustomButton';
 import useMapStore from '../../../utils/store/mapStore';
+import {TextInput} from 'react-native-gesture-handler';
 
 type Props = {
   nextStep: () => void;
@@ -20,7 +21,7 @@ type Props = {
 };
 
 const PickUpAdressForm: React.FC<Props> = ({nextStep, setData}) => {
-  const [address, setAdress] = useState('');
+  const [address, setAddress] = useState('');
   const [locations, setLocations] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const data: any = useMapStore();
@@ -30,6 +31,7 @@ const PickUpAdressForm: React.FC<Props> = ({nextStep, setData}) => {
     currentAddress,
     setCurrentAddress,
     currentLocation,
+    setCurrentLocation,
     destination,
     distance,
   } = data;
@@ -46,18 +48,27 @@ const PickUpAdressForm: React.FC<Props> = ({nextStep, setData}) => {
   const locationGetter = async () => {
     if (address) {
       const data = await fetchPlaces(address);
-      // console.log(data);
       setLocations(data);
     }
   };
 
-  const handleSelectLocation = (location: string, id: string) => {
-    setAdress(location); // Set selected location to input
-    setCurrentAddress(location);
-    setShowDropdown(false); // Hide dropdown after selection
+  const handleAddressChange = async (text: string) => {
+    setAddress(text);
+    const locationData = await fetchLonLat(text, true); // Fetch lat-long for the typed address
+    if (locationData) {
+      setCurrentLocation(locationData);
+      setCurrentAddress(text); // Update currentAddress dynamically
+    }
   };
 
-  function SendLocations() {
+  const handleSelectLocation = async (location: string, id: string) => {
+    setAddress(location); // Update input value
+    setCurrentAddress(location); // Set current address
+    setShowDropdown(false); // Hide dropdown
+    await fetchLonLat(id, false); // Fetch lat-long and update store
+  };
+
+  const SendLocations = () => {
     const pickuparea = currentAddress.split(',')[1];
     if (currentLocation && destination) {
       setData((prevData: any) => {
@@ -74,49 +85,50 @@ const PickUpAdressForm: React.FC<Props> = ({nextStep, setData}) => {
     } else {
       Alert.alert('Something is missing! Select both Addresses');
     }
-  }
+  };
+  const combinedSetData = (data: any) => {
+    setAddress(data);
+    handleAddressChange(data);
+  };
 
   return (
-    <>
-      <View style={homeStyles.bottomSheetContent}>
-        <CustomText style={homeStyles.heading}>Pick Up Address</CustomText>
-        <View style={homeStyles.addressContainer}>
-          <Icons.MapIcon />
-          <CustomText style={homeStyles.addressText}>
-            {currentAddress
-              ? currentAddress
-              : 'L7, Zafa Street, Block 21, F.B. Area, Karachi.'}
-          </CustomText>
-        </View>
-        <CustomInput
-          value={address}
-          style={{width: '100%'}}
-          placeholder="Enter nearest landmark"
-          setValue={setAdress}
-        />
-        {/* Scrollable Dropdown */}
-        {showDropdown && locations.length > 0 && (
-          <View style={styles.dropdownContainer}>
-            <FlatList
-              data={locations}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={({item}: any) => (
-                <TouchableOpacity
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    handleSelectLocation(item.description, item.place_id);
-                    fetchLonLat(item.place_id, false);
-                  }} // Adjust based on location property
-                >
-                  <Text style={styles.dropdownText}>{item.description}</Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        )}
-        <CustomButton onPress={SendLocations} text="Request a Pick Up" />
+    <View style={homeStyles.bottomSheetContent}>
+      <CustomText style={homeStyles.heading}>Pick Up Address</CustomText>
+      <View style={homeStyles.addressContainer}>
+        <Icons.MapIcon />
+        <CustomText style={homeStyles.addressText}>
+          {currentAddress
+            ? currentAddress
+            : 'L7, Zafa Street, Block 21, F.B. Area, Karachi.'}
+        </CustomText>
       </View>
-    </>
+      <CustomInput
+        value={address}
+        style={{width: '100%'}}
+        placeholder="Enter Exact Location"
+        setValue={combinedSetData}
+        // onChangeText={handleAddressChange} // Dynamic update on change
+      />
+      {/* Scrollable Dropdown */}
+      {showDropdown && locations.length > 0 && (
+        <View style={styles.dropdownContainer}>
+          <FlatList
+            data={locations}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({item}: any) => (
+              <TouchableOpacity
+                style={styles.dropdownItem}
+                onPress={() => {
+                  handleSelectLocation(item.description, item.place_id);
+                }}>
+                <Text style={styles.dropdownText}>{item.description}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      )}
+      <CustomButton onPress={SendLocations} text="Request a Pick Up" />
+    </View>
   );
 };
 
