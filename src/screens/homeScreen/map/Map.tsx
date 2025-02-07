@@ -16,7 +16,7 @@ type Prop = {
   bottomSheetPosition: number;
 };
 
-const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
+const Map: React.FC<Prop> = ({currentStep}) => {
   const [key, setKey] = React.useState(0);
   const [riderPoint, setRiderData] = useState({
     latitude: 0,
@@ -45,8 +45,8 @@ const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
 
   const animatedRiderLocation = useRef(
     new AnimatedRegion({
-      latitude: riderPoint.latitude || 0,
-      longitude: riderPoint.longitude || 0,
+      latitude: (riderPoint?.latitude && riderPoint?.latitude) || 0,
+      longitude: (riderPoint?.longitude && riderPoint?.longitude) || 0,
       latitudeDelta: 0.01,
       longitudeDelta: 0.01,
     }),
@@ -61,11 +61,11 @@ const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
   }, [riderId]);
 
   useEffect(() => {
-    if (riderPoint.latitude && riderPoint.longitude) {
+    if (riderPoint?.latitude && riderPoint?.longitude) {
       animatedRiderLocation
         .timing({
-          latitude: riderPoint.latitude,
-          longitude: riderPoint.longitude,
+          latitude: riderPoint?.latitude,
+          longitude: riderPoint?.longitude,
           duration: 1000,
           useNativeDriver: false,
           toValue: 0,
@@ -95,9 +95,8 @@ const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
       });
     }
   };
-
   useEffect(() => {
-    if (!riderPoint.latitude && !riderPoint.longitude) {
+    if (!riderPoint?.latitude && !riderPoint?.longitude) {
       if (currentLocation.latitude && currentLocation.longitude) {
         mapRef.current?.animateToRegion({
           latitude: currentLocation.latitude,
@@ -110,7 +109,12 @@ const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
         adjustMapToCoordinates([currentLocation, destination]);
       }
     }
-  }, [currentLocation, destination, riderPoint.latitude, riderPoint.longitude]);
+  }, [
+    currentLocation,
+    destination,
+    riderPoint?.latitude,
+    riderPoint?.longitude,
+  ]);
 
   return (
     <MapView
@@ -130,7 +134,7 @@ const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       }}>
-      {currentStep >= 6 && (
+      {placeOrderData?.orderStatus >= 3 && currentStep >= 6 && (
         <Marker.Animated
           coordinate={animatedRiderLocation}
           anchor={{x: 0.5, y: 0.5}}>
@@ -182,10 +186,9 @@ const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
         destination.latitude &&
         destination.longitude &&
         currentLocation.latitude &&
-        currentLocation.longitude &&
-        destinationAddress && (
+        currentLocation.longitude && (
           <>
-            {currentStep > 2 && currentStep !== 6 && (
+            {currentStep > 2 && placeOrderData?.orderStatus <= 2 && (
               <Marker
                 coordinate={destination}
                 draggable={currentStep <= 3}
@@ -198,10 +201,11 @@ const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
               />
             )}
             {currentStep === 6 &&
-              riderPoint.latitude !== 0 &&
-              riderPoint.longitude !== 0 &&
+              riderPoint?.latitude !== 0 &&
+              riderPoint?.longitude !== 0 &&
               placeOrderData?.orderStatus !== OrderStatusEnum.OUT_FOR_PICKUP &&
-              placeOrderData?.orderStatus > OrderStatusEnum.DELIVERED && (
+              placeOrderData?.orderStatus ===
+                OrderStatusEnum.OUT_FOR_DELIVERY && (
                 <Marker
                   coordinate={destination}
                   draggable={currentStep <= 3}
@@ -213,7 +217,7 @@ const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
                   }}
                 />
               )}
-            {currentStep !== 6 ? (
+            {currentStep === 6 && placeOrderData?.orderStatus <= 2 ? (
               <MapViewDirections
                 origin={currentLocation}
                 destination={destination}

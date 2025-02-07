@@ -148,7 +148,7 @@ const usePlaceOrder = create<PlaceOrderState>()(
             if (updatedOrder) {
               setPlaceOrderData(updatedOrder);
             } else {
-              set({currentStep: 1});
+              // set({currentStep: 1});
               // Alert.alert('Error', 'Order not found in the latest data.');
             }
           }

@@ -18,6 +18,7 @@ import {
 } from '@utils/helper/helperFunctions';
 import useAuthStore from '@utils/store/authStore';
 import {useNavigation} from '@react-navigation/native';
+import {OrderStatusEnum} from '@utils/enums/enum';
 
 type Props = {
   setCurrentStep: React.Dispatch<React.SetStateAction<number>>;
@@ -42,8 +43,11 @@ const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep}) => {
     const interval = setInterval(() => {
       updateOrderById(token as string);
     }, 1000);
+    if (placeOrderData.orderStatus === OrderStatusEnum.DELIVERED) {
+      navigation.navigate('Feedback');
+    }
     return () => clearInterval(interval);
-  }, [token, updateOrderById]);
+  }, [navigation, placeOrderData.orderStatus, token, updateOrderById]);
   const {
     currentAddress,
     destinationAddress,

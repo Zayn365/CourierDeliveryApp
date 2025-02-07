@@ -5,6 +5,7 @@ import {homeStyles} from '@assets/css/home';
 import Tick from '@assets/images/icons/tickMilestone.svg';
 import Blank from '@assets/images/icons/blinkMilestone.svg';
 import Line from '@assets/images/icons/lineHorizontal.svg';
+import {OrderStatusEnum} from '@utils/enums/enum';
 
 type Props = {
   colorless: boolean;
@@ -46,8 +47,8 @@ function MileStoneTracking({colorless, status}: Props) {
   const statusIndex =
     typeof status === 'string'
       ? properties.findIndex(p => p.title === status)
-      : status === 10
-      ? 3 // Force "Near By" for status 10
+      : status === OrderStatusEnum.OUT_FOR_PICKUP
+      ? 2
       : status - 1;
 
   if (statusIndex >= 0) {
