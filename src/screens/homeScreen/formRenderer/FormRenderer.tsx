@@ -42,7 +42,7 @@ const FormRenderer: React.FC<Prop> = ({currentStep, nextStep, shouldGet}) => {
     consigneeLong: 67.0754,
     consigneeLandmark: '',
     paymentType: COD ? 1 : 2,
-    paymentFrom: 1,
+    paymentFrom: COD ? 1 : 2,
     estDistance: 15.3,
     isInsured: true,
     orderStatus: 0,

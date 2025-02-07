@@ -18,7 +18,6 @@ const ChangePassword = () => {
   const route = useRoute<VerifyScreenRouteProp>();
 
   const {email, otp} = route?.params;
-  console.log('TCL ~ ChangePassword ~ email:', email);
   const onSignInPressed = async () => {
     try {
       if (!newPassword) {

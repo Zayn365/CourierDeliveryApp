@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {StyleSheet, Image, Animated} from 'react-native';
+import {StyleSheet, Image, Animated, Platform} from 'react-native';
 import MapView, {Marker, AnimatedRegion} from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import {ApiKey} from '@utils/Google_KEY';
@@ -9,6 +9,7 @@ import usePlaceOrder from '@utils/store/placeOrderStore';
 import Icons from '@utils/imagePaths/imagePaths';
 import {GetRiderLocation} from '@utils/store/fireStore/firebaseStore';
 import {height} from '@utils/helper/helperFunctions';
+import {OrderStatusEnum} from '@utils/enums/enum';
 
 type Prop = {
   currentStep: number;
@@ -16,11 +17,16 @@ type Prop = {
 };
 
 const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
+  const [key, setKey] = React.useState(0);
   const [riderPoint, setRiderData] = useState({
     latitude: 0,
     longitude: 0,
   });
-
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      setKey(prev => prev + 1);
+    }
+  }, [currentStep]);
   const [heading, setHeading] = useState(0);
   const {riderId, placeOrderData} = usePlaceOrder();
 
@@ -111,6 +117,11 @@ const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
       ref={mapRef}
       style={[StyleSheet.absoluteFillObject, {height: height * 0.6}]}
       showsUserLocation
+      key={
+        Platform.OS === 'android'
+          ? `${key}-${currentLocation.latitude}-${currentLocation.longitude}`
+          : 'map'
+      }
       loadingEnabled={currentStep !== 6}
       customMapStyle={mapStyle}
       initialRegion={{
@@ -139,29 +150,45 @@ const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
         </Marker.Animated>
       )}
 
-      {currentLocation.latitude && currentLocation.longitude && (
-        <Marker
-          coordinate={currentLocation}
-          draggable={currentStep !== 2}
-          image={Icons.pickUp}
-          onDragEnd={e => {
-            const {latitude, longitude} = e.nativeEvent.coordinate;
-            setCurrentLocation({latitude, longitude});
-            fetchAddress(latitude, longitude, false);
-          }}
-        />
-      )}
-
+      {currentStep !== 6 &&
+        currentLocation.latitude &&
+        currentLocation.longitude && (
+          <Marker
+            coordinate={currentLocation}
+            draggable={currentStep <= 2}
+            image={Icons.pickUp}
+            onDragEnd={e => {
+              const {latitude, longitude} = e.nativeEvent.coordinate;
+              setCurrentLocation({latitude, longitude});
+              fetchAddress(latitude, longitude, false);
+            }}
+          />
+        )}
+      {currentStep === 6 &&
+        (placeOrderData?.orderStatus === OrderStatusEnum.OUT_FOR_PICKUP ||
+          placeOrderData?.orderStatus <= OrderStatusEnum.IN_TRANSIT) && (
+          <Marker
+            coordinate={currentLocation}
+            draggable={currentStep <= 2}
+            image={Icons.pickUp}
+            onDragEnd={e => {
+              const {latitude, longitude} = e.nativeEvent.coordinate;
+              setDestination({latitude, longitude});
+              fetchAddress(latitude, longitude, true);
+            }}
+          />
+        )}
       {currentStep !== 1 &&
         destination.latitude &&
         destination.longitude &&
         currentLocation.latitude &&
-        currentLocation.longitude && (
+        currentLocation.longitude &&
+        destinationAddress && (
           <>
-            {currentStep > 2 && (
+            {currentStep > 2 && currentStep !== 6 && (
               <Marker
                 coordinate={destination}
-                draggable
+                draggable={currentStep <= 3}
                 image={Icons.destination}
                 onDragEnd={e => {
                   const {latitude, longitude} = e.nativeEvent.coordinate;
@@ -170,14 +197,29 @@ const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
                 }}
               />
             )}
-
-            {riderPoint.latitude === 0 && riderPoint.longitude === 0 ? (
+            {currentStep === 6 &&
+              riderPoint.latitude !== 0 &&
+              riderPoint.longitude !== 0 &&
+              placeOrderData?.orderStatus !== OrderStatusEnum.OUT_FOR_PICKUP &&
+              placeOrderData?.orderStatus > OrderStatusEnum.DELIVERED && (
+                <Marker
+                  coordinate={destination}
+                  draggable={currentStep <= 3}
+                  image={Icons.destination}
+                  onDragEnd={e => {
+                    const {latitude, longitude} = e.nativeEvent.coordinate;
+                    setDestination({latitude, longitude});
+                    fetchAddress(latitude, longitude, true);
+                  }}
+                />
+              )}
+            {currentStep !== 6 ? (
               <MapViewDirections
                 origin={currentLocation}
                 destination={destination}
                 apikey={ApiKey}
                 strokeColor={
-                  currentStep > 2 && destinationAddress ? '#4CD964' : ''
+                  currentStep >= 2 || destinationAddress ? '#4CD964' : ''
                 }
                 strokeWidth={4}
                 optimizeWaypoints
@@ -195,8 +237,9 @@ const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
               <MapViewDirections
                 origin={riderPoint}
                 destination={
-                  (placeOrderData && placeOrderData?.orderStatus === 10) ||
-                  placeOrderData?.orderStatus <= 4
+                  placeOrderData?.orderStatus ===
+                    OrderStatusEnum.OUT_FOR_PICKUP ||
+                  placeOrderData?.orderStatus <= OrderStatusEnum.IN_TRANSIT
                     ? currentLocation
                     : destination
                 }
@@ -208,7 +251,7 @@ const Map: React.FC<Prop> = ({currentStep, bottomSheetPosition}) => {
                 onReady={result => {
                   setDistance(result.distance);
                   setDuration(result.duration);
-                  adjustMapToCoordinates(result.coordinates);
+                  // adjustMapToCoordinates(result.coordinates);
                 }}
                 onError={errorMessage => {
                   console.error('Error with MapViewDirections:', errorMessage);

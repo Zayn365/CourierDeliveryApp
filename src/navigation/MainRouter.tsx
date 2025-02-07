@@ -8,12 +8,13 @@ import OrderList from '../screens/orderList/OrderList';
 import NavScreen from '../screens/navScreen/NavScreen';
 import Icons from '../utils/imagePaths/imagePaths';
 import Chat from '../screens/chatScreen/Chat';
+import FeedbackScreen from '@screens/feedback/Feedback';
 
 const Stack = createNativeStackNavigator();
 // import BackIcon from '@assets/images/icons/Back.svg';
 
 const Router = ({}) => {
-  const navigation = useNavigation();
+  const navigation: any = useNavigation();
 
   return (
     <>
@@ -35,10 +36,15 @@ const Router = ({}) => {
             fontWeight: '600',
             fontFamily: 'Outfit-Regular',
           },
+          // eslint-disable-next-line react/no-unstable-nested-components
           headerLeft: ({canGoBack}) =>
             canGoBack ? (
               <TouchableOpacity
-                onPress={() => navigation.canGoBack() && navigation.goBack()}>
+                onPress={() =>
+                  navigation.canGoBack()
+                    ? navigation.goBack()
+                    : navigation.popToTop()
+                }>
                 <Icons.BackIcon width={34} height={34} />
               </TouchableOpacity>
             ) : null,
@@ -77,6 +83,14 @@ const Router = ({}) => {
             headerShown: true,
           }}
           component={Chat}
+        />
+        <Stack.Screen
+          name="Feedback"
+          options={{
+            title: 'Feedback',
+            headerShown: true,
+          }}
+          component={FeedbackScreen}
         />
       </Stack.Navigator>
     </>

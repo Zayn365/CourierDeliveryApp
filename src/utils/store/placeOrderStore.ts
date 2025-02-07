@@ -34,7 +34,7 @@ type PlaceOrderState = {
     token: string,
   ) => Promise<Record<string, any> | undefined>;
   getUserOrders: (token: string) => Promise<Record<string, any> | undefined>;
-  updateOrderById: (id: string, token: string) => void;
+  updateOrderById: (token: string) => void;
 };
 
 const usePlaceOrder = create<PlaceOrderState>()(
@@ -137,27 +137,23 @@ const usePlaceOrder = create<PlaceOrderState>()(
           throw error;
         }
       },
-      updateOrderById: async (id: string, token: string) => {
-        const {getUserOrders} = get();
+      updateOrderById: async (token: string) => {
+        const {getUserOrders, placeOrderData, setPlaceOrderData} = get();
         const order = await getUserOrders(token);
-        if (order) {
-          // Find the latest order matching the provided id
-          const updatedOrder: any = order?.orders.find(
-            (orders: any) => orders.id === id,
-          );
-
-          console.log(
-            'TCL ~ file: placeOrdertore.ts:163 ~ updateOrderById: ~ updatedOrder:',
-            updatedOrder,
-          );
-          if (updatedOrder) {
-            set({placeOrderData: updatedOrder});
-          } else {
-            set({currentStep: 1});
-            // Alert.alert('Error', 'Order not found in the latest data.');
+        try {
+          if (order) {
+            const updatedOrder: any = order?.orders.find(
+              (orders: any) => orders.id === placeOrderData?.id,
+            );
+            if (updatedOrder) {
+              setPlaceOrderData(updatedOrder);
+            } else {
+              set({currentStep: 1});
+              // Alert.alert('Error', 'Order not found in the latest data.');
+            }
           }
-        } else {
-          // Alert.alert('Error', 'No orders available to search.');
+        } catch (error) {
+          console.log('TCL ~ updateOrderById: ~ error:', error);
         }
       },
     }),

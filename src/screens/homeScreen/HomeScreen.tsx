@@ -58,7 +58,6 @@ const App: React.FC = () => {
       setBottomSheetPosition(index);
     }
   }, []);
-  console.log('TCL ~ orders:', orders);
 
   return (
     <>
@@ -86,13 +85,16 @@ const App: React.FC = () => {
           </View>
           {bottomSheetPosition !== 2 && <Header currentStep={currentStep} />}
 
-          {currentStep === 1 && orders && orders?.length > 0 && (
-            <TouchableOpacity
-              style={{position: 'absolute', zIndex: 5, width: '100%'}}
-              onPress={() => navigation.navigate('OrderList')}>
-              <ProgressBar />
-            </TouchableOpacity>
-          )}
+          {currentStep === 1 &&
+            bottomSheetPosition !== 2 &&
+            orders &&
+            orders?.length > 0 && (
+              <TouchableOpacity
+                style={{position: 'absolute', zIndex: 5, width: '100%'}}
+                onPress={() => navigation.navigate('OrderList')}>
+                <ProgressBar />
+              </TouchableOpacity>
+            )}
           {/* GoBack Button */}
 
           <GoBackButton

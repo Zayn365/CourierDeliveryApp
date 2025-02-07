@@ -27,7 +27,7 @@ type Props = {
 // const etaPickup = '09:46 PM';
 const etaDate = new Date().toDateString();
 
-const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep, COD}) => {
+const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep}) => {
   const chat: any = useChatStore();
   const navigation: any = useNavigation();
   const [isShow, setIsShow] = useState<Boolean>(false);
@@ -37,13 +37,13 @@ const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep, COD}) => {
   const {price, placeOrderData, updateOrderById} = priceData;
   const [durartionTime, setDurationTime] = useState();
   const {createChatRoom} = chat;
-  const getOrdersOfUser = async () => {
-    await updateOrderById(token as string);
-  };
+
   useEffect(() => {
-    getOrdersOfUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const interval = setInterval(() => {
+      updateOrderById(token as string);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [token, updateOrderById]);
   const {
     currentAddress,
     destinationAddress,
@@ -53,7 +53,7 @@ const ThankYouFormDetails: React.FC<Props> = ({setCurrentStep, COD}) => {
   } = data;
   const parcelType = getParcelTypeText(Number(placeOrderData?.parcelType));
   const OrderNo = OrderIdSpliter(placeOrderData?.id);
-  const paymentType = getPaymentTypeText(placeOrderData?.paymentType);
+  const paymentType = getPaymentTypeText(Number(placeOrderData?.paymentType));
   const pickUp = placeOrderData
     ? `${placeOrderData?.pickUpAddress}`
     : currentAddress
@@ -140,14 +140,14 @@ Download TCS Now: [DownloadLink]
                   <>
                     {' '}
                     <CustomText style={homeStyles.etaText}>
-                      {durartionTime ? durartionTime : 'Unknown'}
+                      {durartionTime ? durartionTime : 'Waiting'}
                     </CustomText>
                     <CustomText style={homeStyles.etaDate}>
                       {etaDate}
                     </CustomText>
                   </>
                 ) : (
-                  <CustomText style={homeStyles.etaText}>Unknown</CustomText>
+                  <CustomText style={homeStyles.etaText}>Waiting</CustomText>
                 )}
               </>
             </View>
@@ -324,7 +324,7 @@ Download TCS Now: [DownloadLink]
                         Payment Method:
                       </CustomText>
                       <CustomText style={homeStyles.lightFont}>
-                        {COD ? 'Cash on pickup' : paymentType}
+                        {paymentType}
                       </CustomText>
                     </View>
                   </View>
